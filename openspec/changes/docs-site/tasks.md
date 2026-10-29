@@ -39,11 +39,11 @@
 - [x] 6.1 Write `scripts/check-workflows.mjs` tests first (fixtures: `pull_request_target`, `workflow_run`, missing top-level `permissions`, an action pinned by tag, `secrets.` in `ci.yml`), then the script. Verify: each fixture fails; `actionlint` passes on the real workflows.
 - [ ] 6.2 Add `.github/workflows/ci.yml` per design.md D14: `check`, `image` (build without push plus `scripts/smoke`), `dco`, `drafted-pr`, and the `dist/` artifact upload. Verify: a pull request from a fork runs green without secrets (test with a throwaway fork); a commit without sign-off fails `dco`. — Written; the fork-PR verification waits for a first outside pull request (or a throwaway fork) after merge.
 - [ ] 6.3 Add `.github/workflows/links.yml` per D11. Verify: a manual run over a fixture page with a dead external link opens one `broken-links` issue, and a second run updates the same issue. — Written; the manual run is only possible once the workflow is on `main`.
-- [ ] 6.4 Add `.github/workflows/pr-review.yml` (mirror of the other repositories' advisory review, with the public-content pass in the prompt). Verify: it skips on a fork pull request and on a pull request while `CLAUDE_CODE_OAUTH_TOKEN` is unset. — Written (claude-code-action pinned to v1.0.250 by SHA, bot `looma-docs-bot[bot]`); verify the skip on this PR, where `CLAUDE_CODE_OAUTH_TOKEN` is unset.
+- [x] 6.4 Add `.github/workflows/pr-review.yml` (mirror of the other repositories' advisory review, with the public-content pass in the prompt). Verify: it skips on a fork pull request and on a pull request while `CLAUDE_CODE_OAUTH_TOKEN` is unset. — Done (claude-code-action pinned to v1.0.250 by SHA, bot `looma-docs-bot[bot]`); on PR #1 it skipped green because `CLAUDE_CODE_OAUTH_TOKEN` is unset. The fork skip follows from the job condition, which `check-workflows.mjs` asserts.
 
 ## 7. Image and server
 
-- [ ] 7.1 Add `Dockerfile`, `.dockerignore` and `deploy/Caddyfile` per design.md D13 (Caddy `2.11.7-alpine` by digest, port 8080). Verify: `docker build` succeeds and the image runs as a non-root user. — Written; Docker was not running locally, so the image build and its smoke test are verified by the `image` job in CI.
+- [x] 7.1 Add `Dockerfile`, `.dockerignore` and `deploy/Caddyfile` per design.md D13 (Caddy `2.11.7-alpine` by digest, port 8080). Verify: `docker build` succeeds and the image runs as a non-root user. — Done: Docker was not running locally; the `image` job built and smoke-tested it on PR #1 (green).
 - [x] 7.2 Write `scripts/smoke` (runs the image, then checks: `/` 200 with the security headers and `Vary: Accept`; `/getting-started/`-style page with `Accept: text/markdown` returns its Markdown with the right content type (use the home page until sections exist); a fixture redirect returns 301 with `Location`; `/no-such-page/` returns 404 with the 404 page; `/robots.txt`, `/llms.txt`, `/sitemap-index.xml` are 200; `/path` without slash returns 301 to `/path/`). Verify: it passes on the real image and fails when the `@md` block is removed from the Caddyfile. — Done: passes on `scripts/smoke --local` (part of `just check`) and fails when the `@markdown_home` rewrite is removed; CI runs it against the image.
 
 ## 8. Deploy
@@ -68,4 +68,4 @@
 
 ## 10. Final check
 
-- [ ] 10.1 `just check` passes on a clean clone in the dev shell, and `ci.yml` is green on the pull request.
+- [x] 10.1 `just check` passes on a clean clone in the dev shell, and `ci.yml` is green on the pull request. — Done: local `just check` exit 0; on PR #1 `check`, `image` and `dco` are green.
