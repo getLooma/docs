@@ -70,7 +70,7 @@ branch, matching what is applied on GitHub. `just ruleset-apply` SHALL create or
 `just ruleset-check` SHALL compare it with the live ruleset. Both go through `gh api` and need a
 login with admin access to the repository.
 
-The ruleset SHALL hold the phase 1 rules:
+The ruleset SHALL hold these rules:
 
 - deletion blocked;
 - no force pushes (`non_fast_forward`);
@@ -79,13 +79,15 @@ The ruleset SHALL hold the phase 1 rules:
 - review threads resolved before merge;
 - extra approval for unattributed changes;
 - squash merge as the only merge method;
+- required status checks `check`, `image`, `dco` and `drafted-pr` (GitHub Actions), with the
+  branch up to date before merge;
 - an empty bypass list.
 
-Phases 2 and 3 are a documented follow-up (design.md D19), not yet required:
-
-- **Phase 2**, once CI exists: required status checks for `just check`, plus DCO if it is adopted.
-- **Phase 3**, once a second team member joins: 1 required approval, code-owner review and
-  last-push approval.
+The ruleset SHALL NOT require approvals from another person. Who may merge is decided by access
+alone: only `@getLooma/dev` and the organization owners can write to the repository, so only they
+can merge, and any of them may merge their own pull request once its checks pass. A pull request
+from a docs bot `drafts/` branch is the exception: `drafted-pr` requires a team member's approval
+before it can merge.
 
 #### Scenario: The ruleset file holds the phase 1 rules
 
