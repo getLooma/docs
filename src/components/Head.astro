@@ -1,0 +1,82 @@
+---
+// Starlight's <head>, plus the Markdown alternate, the per-page Open Graph image and JSON-LD
+// (openspec change docs-site, design.md D7 and D8).
+import Default from '@astrojs/starlight/components/Head.astro';
+import { sections } from '../sections.mjs';
+
+const route = Astro.locals.starlightRoute;
+const { entry, lastUpdated } = route;
+const data = entry.data;
+const site = Astro.site ?? new URL('https://docs.getlooma.io');
+const pagePath = Astro.url.pathname.endsWith('/') ? Astro.url.pathname : `${Astro.url.pathname}/`;
+const isHome = pagePath === '/';
+const markdownPath = isHome ? '/index.md' : `${pagePath.replace(/\/$/, '')}.md`;
+const ogImage = new URL(`/og/${isHome ? 'index' : entry.id}.png`, site);
+const pageUrl = new URL(pagePath, site);
+
+const organization = {
+  '@type': 'Organization',
+  '@id': `${site.origin}/#organization`,
+  name: 'Looma',
+  url: 'https://getlooma.io/',
+  logo: new URL('/favicon.svg', site).href,
+};
+
+// Breadcrumbs: Docs home, then each URL segment (the first labelled by its section).
+const segments = pagePath.split('/').filter(Boolean);
+const crumbs = [{ name: 'Looma Docs', url: new URL('/', site).href }];
+segments.forEach((segment, i) => {
+  const isLast = i === segments.length - 1;
+  const section = i === 0 ? sections.find((s) => s.dir === segment) : undefined;
+  const name = isLast ? data.title : (section?.label ?? segment.replace(/-/g, ' '));
+  crumbs.push({ name, url: new URL(`/${segments.slice(0, i + 1).join('/')}/`, site).href });
+});
+
+const graph: Record<string, unknown>[] = [
+  organization,
+  {
+    '@type': 'BreadcrumbList',
+    itemListElement: crumbs.map((c, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: c.name,
+      item: c.url,
+    })),
+  },
+];
+if (!isHome && !data.template?.includes?.('splash')) {
+  graph.push({
+    '@type': 'TechArticle',
+    headline: data.title,
+    description: data.description,
+    url: pageUrl.href,
+    inLanguage: 'en',
+    ...(lastUpdated ? { dateModified: lastUpdated.toISOString() } : {}),
+    publisher: { '@id': organization['@id'] },
+    isPartOf: { '@type': 'WebSite', name: 'Looma Docs', url: new URL('/', site).href },
+  });
+}
+if (data.faq?.length) {
+  graph.push({
+    '@type': 'FAQPage',
+    mainEntity: data.faq.map((f: { question: string; answer: string }) => ({
+      '@type': 'Question',
+      name: f.question,
+      acceptedAnswer: { '@type': 'Answer', text: f.answer },
+    })),
+  });
+}
+const jsonLd = JSON.stringify({ '@context': 'https://schema.org', '@graph': graph }).replace(
+  /</g,
+  '\\u003c'
+);
+---
+
+<Default />
+<link rel="alternate" type="text/markdown" href={markdownPath} />
+<meta property="og:image" content={ogImage.href} />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content={data.title} />
+<meta name="twitter:image" content={ogImage.href} />
+<script type="application/ld+json" set:html={jsonLd} />
