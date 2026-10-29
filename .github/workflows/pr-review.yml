@@ -74,7 +74,7 @@ jobs:
           ref: ${{ github.event_name == 'issue_comment' && format('refs/pull/{0}/head', github.event.issue.number) || '' }}
           fetch-depth: 0 # the plugin's history reviewer reads git blame/log
 
-      - uses: anthropics/claude-code-action@a26b07d8c778b0c43f64618e5fd29fd0f8af72e8 # v1.0.250
+      - uses: anthropics/claude-code-action@374f254f5efaf968abfe15d399fd90972e8138b9 # v1.0.251
         if: steps.gate.outputs.enabled == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
