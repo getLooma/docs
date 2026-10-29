@@ -19,6 +19,14 @@ describe('check-dco', () => {
     expect(dcoErrors([commit('Fix\n\nSigned-off-by: Bob <bob@example.com>')])).toHaveLength(1);
   });
 
+  it('skips merge commits, such as GitHub\'s "Update branch"', () => {
+    expect(dcoErrors([{ ...commit('Merge branch main into fix'), parents: 2 }])).toEqual([]);
+  });
+
+  it('still checks a single-parent commit without a sign-off', () => {
+    expect(dcoErrors([{ ...commit('Fix'), parents: 1 }])).toHaveLength(1);
+  });
+
   it('exempts Dependabot', () => {
     expect(
       dcoErrors([
