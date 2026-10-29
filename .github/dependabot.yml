@@ -5,6 +5,9 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    # Versions at least 14 days old only, matching the pinning rule (docs-site design).
+    cooldown:
+      default-days: 14
     open-pull-requests-limit: 5
     groups:
       astro:
@@ -16,6 +19,9 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    # Versions at least 14 days old only, matching the pinning rule (docs-site design).
+    cooldown:
+      default-days: 14
     groups:
       actions:
         patterns: ["*"]
@@ -24,3 +30,6 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    # Versions at least 14 days old only, matching the pinning rule (docs-site design).
+    cooldown:
+      default-days: 14
