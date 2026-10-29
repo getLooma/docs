@@ -1,0 +1,5 @@
+{
+  "baselineScriptBytes": 12266,
+  "maxScriptBytes": 14720,
+  "note": "Client script per page: the first build's bytes plus 20 percent (docs-discoverability spec). Raise it only in a reviewed pull request that says why."
+}

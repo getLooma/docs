@@ -1,0 +1,13 @@
+# Exact matches scripts/check-public.mjs may accept. Owned by the owner (CODEOWNERS). Add a line
+# only for something that is genuinely public, and say why in the pull request.
+
+# direnv's local override file name, not a host.
+envrc.local
+# Examples in the docs-site change's own scenarios and tasks (openspec/changes/docs-site).
+10.0.3.7
+localhost:5173
+# Local development and CI smoke-test addresses of this site (Astro's dev port, `just serve`, the
+# smoke container). Not internal infrastructure.
+localhost:4321
+localhost:8080
+127.0.0.1:18080

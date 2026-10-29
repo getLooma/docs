@@ -1,0 +1,16 @@
+extends: capitalization
+message: "Use sentence case in headings: '%s'."
+level: warning
+scope: heading
+match: $sentence
+exceptions:
+  - Looma
+  - Shopify
+  - Slack
+  - Discord
+  - HubSpot
+  - Gorgias
+  - AI
+  - FAQ
+  - Markdown
+  - GitHub

@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+# Smoke test of the production server (docs-delivery and docs-discoverability specs).
+#   scripts/smoke --local [dist]   start Caddy from the dev shell with deploy/Caddyfile on a free
+#                                  port over a copy of dist (plus a fixture redirect), test, stop
+#   scripts/smoke <base-url>       test a server that is already running (CI: the built image)
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+fail=0
+ok() { printf 'smoke: ok   %s\n' "$1"; }
+bad() { printf 'smoke: FAIL %s\n' "$1" >&2; fail=1; }
+
+cleanup() { :; }
+trap 'cleanup' EXIT
+
+fixture_redirect=""
+fixture_page=""
+if [ "${1:-}" = "--local" ]; then
+  dist="${2:-dist}"
+  root="$(mktemp -d)"
+  cp -R "$dist/." "$root/"
+  node scripts/routes.mjs --caddy "$root" >/dev/null
+  printf 'redir /smoke-moved/ / permanent\n' >> "$root/_redirects.caddy"
+  fixture_redirect="/smoke-moved/"
+  # A fixture section page, so the slashless redirect and negotiation on a page are tested
+  # even before the first section exists.
+  mkdir -p "$root/smoke-section/page"
+  cp "$root/index.html" "$root/smoke-section/page/index.html"
+  printf '# Smoke page\n' > "$root/smoke-section/page.md"
+  fixture_page="/smoke-section/page/"
+  port="$(node -e 'const s=require("net").createServer();s.listen(0,()=>{console.log(s.address().port);s.close()})')"
+  PORT="$port" SITE_ROOT="$root" caddy run --config deploy/Caddyfile --adapter caddyfile >"$root/.caddy.log" 2>&1 &
+  caddy_pid=$!
+  cleanup() { kill "$caddy_pid" 2>/dev/null || true; wait "$caddy_pid" 2>/dev/null || true; rm -rf "$root"; }
+  base="http://127.0.0.1:$port"
+else
+  base="${1:?usage: scripts/smoke --local [dist] | scripts/smoke <base-url>}"
+fi
+
+for _ in $(seq 1 50); do curl -fs -o /dev/null "$base/" && break; sleep 0.2; done
+
+# head <path> [curl args...] → prints status line + headers
+head_of() { local p="$1"; shift; curl -s -o /dev/null -D - "$@" "$base$p" | tr -d '\r'; }
+status_of() { curl -s -o /dev/null -w '%{http_code}' "$@"; }
+has() { grep -qi "^$2" <<<"$1"; }
+
+h="$(head_of /)"
+for header in 'Strict-Transport-Security:' 'X-Content-Type-Options: nosniff' \
+  'Referrer-Policy: strict-origin-when-cross-origin' 'Content-Security-Policy:' 'Vary: Accept'; do
+  if has "$h" "$header"; then ok "/ sends $header"; else bad "/ lacks $header"; fi
+done
+[ "$(status_of "$base/")" = 200 ] && ok "/ is 200" || bad "/ is not 200"
+
+# Content negotiation: the home page's Markdown copy.
+md_head="$(head_of / -H 'Accept: text/markdown')"
+md_body="$(curl -s -H 'Accept: text/markdown' "$base/")"
+if has "$md_head" 'Content-Type: text/markdown; charset=utf-8' && [ "$md_body" = "$(curl -s "$base/index.md")" ]; then
+  ok "Accept: text/markdown on / returns /index.md"
+else
+  bad "Accept: text/markdown on / does not return /index.md as text/markdown"
+fi
+if has "$(head_of / -H 'Accept: text/html')" 'Content-Type: text/html'; then ok "/ with Accept: text/html is HTML"; else bad "/ with Accept: text/html is not HTML"; fi
+
+# Every section page, if any: negotiation and the slashless redirect.
+first_page="${fixture_page:-$(grep -v '^#' published-routes.txt | grep -v '^/$' | head -1 || true)}"
+if [ -n "$first_page" ] && [ "$(status_of "$base$first_page")" = 200 ]; then
+  slashless="${first_page%/}"
+  loc="$(head_of "$slashless" | sed -n 's/^Location: //Ip')"
+  [ "$(status_of "$base$slashless")" = 301 ] && [ "$loc" = "$first_page" ] && ok "$slashless → 301 $first_page" || bad "$slashless does not 301 to $first_page"
+  [ "$(curl -s -H 'Accept: text/markdown' "$base$first_page")" = "$(curl -s "$base$slashless.md")" ] && ok "Accept: text/markdown on $first_page" || bad "Accept: text/markdown on $first_page"
+fi
+
+# A redirect from redirects.json (or the local fixture).
+redirect_from="${fixture_redirect:-$(node -e 'const r=require("./redirects.json");console.log(r[0]?.from??"")')}"
+if [ -n "$redirect_from" ]; then
+  code="$(status_of "$base$redirect_from")"
+  loc="$(head_of "$redirect_from" | sed -n 's/^Location: //Ip')"
+  [ "$code" = 301 ] && [ -n "$loc" ] && ok "$redirect_from → 301 $loc" || bad "$redirect_from is $code, expected 301"
+fi
+
+# Unknown paths: 404 with the site's 404 page.
+code="$(status_of "$base/no-such-page/")"
+body="$(curl -s "$base/no-such-page/")"
+if [ "$code" = 404 ] && grep -q 'Page not found\|404' <<<"$body"; then ok "/no-such-page/ is 404 with the 404 page"; else bad "/no-such-page/ is $code"; fi
+
+# Discovery files.
+for p in /robots.txt /llms.txt /llms-full.txt /sitemap-index.xml /index.md; do
+  [ "$(status_of "$base$p")" = 200 ] && ok "$p is 200" || bad "$p is not 200"
+done
+has "$(head_of /llms.txt)" 'Content-Type: text/plain; charset=utf-8' && ok "/llms.txt is text/plain" || bad "/llms.txt is not text/plain; charset=utf-8"
+
+exit "$fail"

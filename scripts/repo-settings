@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# Apply or verify the repository settings in scripts/repo-settings.json (docs-delivery spec,
+# "Repository settings are kept as code"). Needs a gh login with admin access to getLooma/docs,
+# so it runs on the owner's machine, never in CI.
+#   scripts/repo-settings apply | check
+set -euo pipefail
+cd "$(dirname "$0")/.."
+repo="getLooma/docs"
+want="scripts/repo-settings.json"
+section() { node -e 'const s=require("./'"$want"'");process.stdout.write(JSON.stringify(s[process.argv[1]]))' "$1"; }
+
+apply() {
+  section repository | gh api -X PATCH "repos/$repo" --input - --silent
+  section workflow_permissions | gh api -X PUT "repos/$repo/actions/permissions/workflow" --input - --silent
+  section actions | gh api -X PUT "repos/$repo/actions/permissions" --input - --silent
+  section fork_pr_approval | gh api -X PUT "repos/$repo/actions/permissions/fork-pr-contributor-approval" --input - --silent
+  echo "repo-settings: applied $want to $repo"
+}
+
+check() {
+  live="$(node -e '
+    const { execFileSync } = require("child_process");
+    const get = (p) => JSON.parse(execFileSync("gh", ["api", p], { encoding: "utf8" }));
+    const r = process.argv[1];
+    console.log(JSON.stringify({
+      repository: get(`repos/${r}`),
+      workflow_permissions: get(`repos/${r}/actions/permissions/workflow`),
+      actions: get(`repos/${r}/actions/permissions`),
+      fork_pr_approval: get(`repos/${r}/actions/permissions/fork-pr-contributor-approval`),
+      teams: get(`repos/${r}/teams`),
+      collaborators: get(`repos/${r}/collaborators?affiliation=direct`),
+    }));' "$repo")"
+  LIVE="$live" node -e '
+    const want = require("./'"$want"'");
+    const live = JSON.parse(process.env.LIVE);
+    const diffs = [];
+    const walk = (w, l, at) => {
+      for (const [k, v] of Object.entries(w)) {
+        if (v && typeof v === "object") walk(v, l?.[k] ?? {}, `${at}.${k}`);
+        else if (l?.[k] !== v) diffs.push(`${at}.${k}: want ${JSON.stringify(v)}, have ${JSON.stringify(l?.[k])}`);
+      }
+    };
+    for (const k of Object.keys(want)) walk(want[k], live[k], k);
+    const writers = live.teams.filter((t) => ["push", "maintain", "admin"].includes(t.permission));
+    for (const t of writers) if (t.slug !== "docs-maintainers") diffs.push(`team ${t.slug} has ${t.permission} access`);
+    if (!writers.some((t) => t.slug === "docs-maintainers")) diffs.push("team docs-maintainers lacks write access");
+    for (const c of live.collaborators) diffs.push(`direct collaborator ${c.login} (use the team instead)`);
+    for (const d of diffs) console.error(`repo-settings: ${d}`);
+    if (diffs.length) process.exit(1);
+    console.log("repo-settings: live settings match");'
+}
+
+case "${1:-}" in
+  apply) apply ;;
+  check) check ;;
+  *) echo "usage: scripts/repo-settings apply|check" >&2; exit 2 ;;
+esac

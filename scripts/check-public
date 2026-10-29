@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Public-content scan for `just check`: secrets (gitleaks) and generic internal patterns
+# (scripts/check-public.mjs). openspec change docs-site, docs-delivery spec.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+gitleaks dir . --config .gitleaks.toml --no-banner --redact --log-level warn
+node scripts/check-public.mjs .
