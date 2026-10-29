@@ -1,0 +1,16 @@
+name: A page is missing
+description: You tried to do something in Looma and the docs did not help.
+labels: ["missing-page"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: What were you trying to do?
+      description: Describe the task in your own words.
+    validations:
+      required: true
+  - type: textarea
+    id: looked
+    attributes:
+      label: Where did you look?
+      description: Pages you read, or what you searched for.

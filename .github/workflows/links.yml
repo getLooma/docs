@@ -1,0 +1,44 @@
+name: External links
+
+# Weekly and on demand only, so a flaky external site never blocks a merge (design.md D11).
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  links:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: nixbuild/nix-quick-install-action@9f63be77f412a248c9d9a65a4c82cf066cdf8f0c # v35
+      - name: Build the site
+        run: nix develop -c bash -c 'pnpm install --frozen-lockfile && just build'
+      - name: Check external links
+        id: lychee
+        run: |
+          set +e
+          nix develop -c lychee --no-progress --format markdown --output "$RUNNER_TEMP/links.md" \
+            --exclude-path dist/pagefind --scheme https --scheme http 'dist/**/*.html'
+          echo "status=$?" >> "$GITHUB_OUTPUT"
+      - name: Open or update the broken-links issue
+        if: steps.lychee.outputs.status != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          number="$(gh issue list --label broken-links --state open --json number --jq '.[0].number // empty')"
+          if [ -n "$number" ]; then
+            gh issue edit "$number" --body-file "$RUNNER_TEMP/links.md"
+          else
+            gh issue create --title "Broken external links" --label broken-links --body-file "$RUNNER_TEMP/links.md"
+          fi

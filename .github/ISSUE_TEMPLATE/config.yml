@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security problem
+    url: https://github.com/getLooma/docs/security/advisories/new
+    about: Please report security problems privately, never in a public issue (see SECURITY.md).
+  - name: Ideas and questions about the docs
+    url: https://github.com/getLooma/docs/discussions
+    about: Start a discussion.

@@ -1,0 +1,5 @@
+# Every change is reviewed by the docs maintainers; CI, workflows and checks also by the owner.
+# Only @getLooma/docs-maintainers has write access (design.md D19).
+*           @getLooma/docs-maintainers
+/.github/   @DevAOC @getLooma/docs-maintainers
+/scripts/   @DevAOC @getLooma/docs-maintainers

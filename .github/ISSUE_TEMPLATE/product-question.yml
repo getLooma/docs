@@ -1,0 +1,17 @@
+name: A question about using Looma
+description: For help with your own account, the support team is the fastest route.
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This repository is for the documentation. For help with your Looma account, contact
+        support at `<support email: to confirm>`; they can see your setup, which we can't here.
+        If the answer should be in the docs, tell us below and we'll add it.
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+      description: Please don't include real customer data or anything private.
+    validations:
+      required: true

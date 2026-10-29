@@ -1,0 +1,123 @@
+name: Deploy
+
+# main → ghcr.io/getlooma/docs:<sha> (smoke-tested) → :live → Coolify deploys it (design.md D13).
+# A manual run with `sha` moves :live back to that image and redeploys without rebuilding.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Full commit SHA whose image to deploy (ghcr.io/getlooma/docs:<sha>)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+# One deploy at a time; a newer one waits instead of cancelling the one in flight.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/getlooma/docs
+
+jobs:
+  image:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: nixbuild/nix-quick-install-action@9f63be77f412a248c9d9a65a4c82cf066cdf8f0c # v35
+      - uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7.0.2
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+          gc-max-store-size-linux: 2G
+      - name: just check, then the site for the image
+        run: nix develop -c bash -c 'pnpm install --frozen-lockfile && just check && node scripts/routes.mjs --caddy dist'
+      - name: Build and smoke-test the image
+        run: |
+          docker build -t "$IMAGE:$GITHUB_SHA" \
+            --label org.opencontainers.image.source=https://github.com/getLooma/docs \
+            --label "org.opencontainers.image.revision=$GITHUB_SHA" .
+          docker run -d --name docs -p 18080:8080 "$IMAGE:$GITHUB_SHA"
+          trap 'docker rm -f docs >/dev/null' EXIT
+          scripts/smoke http://127.0.0.1:18080
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Push the image
+        run: docker push "$IMAGE:$GITHUB_SHA"
+
+  promote:
+    needs: image
+    if: >-
+      !cancelled() && (needs.image.result == 'success' ||
+      (github.event_name == 'workflow_dispatch' && needs.image.result == 'skipped'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Validate the SHA
+        env:
+          SHA: ${{ inputs.sha || github.sha }}
+        run: '[[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::sha must be a full 40-character commit SHA"; exit 1; }'
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Move :live to the image
+        env:
+          SHA: ${{ inputs.sha || github.sha }}
+        run: docker buildx imagetools create --tag "$IMAGE:live" "$IMAGE:$SHA"
+
+  deploy:
+    needs: promote
+    if: ${{ !cancelled() && needs.promote.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    permissions:
+      contents: read
+    steps:
+      # Until the owner creates the Coolify app and the `production` environment's secrets
+      # (tasks.md 9.6), skip with a notice instead of failing.
+      - name: Check deploy configuration
+        id: gate
+        env:
+          COOLIFY_URL: ${{ secrets.COOLIFY_URL }}
+          COOLIFY_APP_UUID: ${{ secrets.COOLIFY_APP_UUID }}
+          COOLIFY_API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
+        run: |
+          if [ -n "$COOLIFY_URL" ] && [ -n "$COOLIFY_APP_UUID" ] && [ -n "$COOLIFY_API_TOKEN" ]; then
+            echo "::add-mask::$COOLIFY_URL"
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::The production environment's Coolify secrets are not set; skipping the deploy."
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.gate.outputs.enabled == 'true'
+        with:
+          persist-credentials: false
+      - name: Deploy
+        if: steps.gate.outputs.enabled == 'true'
+        env:
+          COOLIFY_URL: ${{ secrets.COOLIFY_URL }}
+          COOLIFY_APP_UUID: ${{ secrets.COOLIFY_APP_UUID }}
+          COOLIFY_API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
+        run: node scripts/coolify-deploy.mjs
