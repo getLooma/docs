@@ -9,7 +9,7 @@ import { parse } from 'yaml';
 import { sections } from '../src/sections.mjs';
 import { listPageFiles } from './lib/pages.mjs';
 
-export const MAINTAINERS = '@getLooma/docs-maintainers';
+export const MAINTAINERS = '@getLooma/dev';
 export const OWNER = '@DevAOC';
 
 const read = (root, rel) => {

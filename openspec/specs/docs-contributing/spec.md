@@ -45,22 +45,22 @@ check` passed, no internal details, sign-off.
 ### Requirement: Anyone may contribute, only the Looma team merges
 
 Anyone SHALL be able to open issues, take part in discussions, and open pull requests from a
-fork. Only members of the GitHub team `@getLooma/docs-maintainers`, which holds the repository's
+fork. Only members of the GitHub team `@getLooma/dev`, which holds the repository's
 write access, SHALL be able to merge; every other account has read access only.
-`.github/CODEOWNERS` SHALL assign `*` to `@getLooma/docs-maintainers`, and `/.github/` and
+`.github/CODEOWNERS` SHALL assign `*` to `@getLooma/dev`, and `/.github/` and
 `/scripts/` to the owner. `CONTRIBUTING.md` SHALL state that anyone can propose a change and that
 a Looma team member reviews and merges it.
 
 #### Scenario: CODEOWNERS names the team and the owner
 
 - **WHEN** `just check` runs
-- **THEN** it fails if `.github/CODEOWNERS` has no `*` rule for `@getLooma/docs-maintainers`, or
+- **THEN** it fails if `.github/CODEOWNERS` has no `*` rule for `@getLooma/dev`, or
   no owner rule for `/.github/` and `/scripts/`
 
 #### Scenario: Only the team has write access
 
 - **WHEN** `just repo-settings check` runs with an admin token
-- **THEN** it fails if any team or user other than `@getLooma/docs-maintainers` and the
+- **THEN** it fails if any team or user other than `@getLooma/dev` and the
   organization owners has write, maintain or admin access
 
 ### Requirement: The main branch is protected by a ruleset kept as code
@@ -131,7 +131,7 @@ goes in public docs. Vale SHALL enforce the product vocabulary from a style vend
 
 A pull request drafted by automation SHALL come from the Looma docs bot on a branch starting
 with `drafts/`, labelled `drafted`, and SHALL pass the same `ci.yml` and the same ruleset as any
-other pull request. It is never merged by the bot; a member of `@getLooma/docs-maintainers`
+other pull request. It is never merged by the bot; a member of `@getLooma/dev`
 reviews and merges it (by process in phase 1; enforced by the ruleset's approval rule from phase
 3, design.md D19). Its body SHALL describe the user-facing change in user terms and SHALL
 NOT link to or name a private repository, pull request, issue or person outside the docs repo.

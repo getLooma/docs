@@ -77,7 +77,7 @@ describe('check-repo', () => {
   it('rejects CODEOWNERS without the team or the owner rules', () => {
     write(root, '.github/CODEOWNERS', '* @someone\n');
     const out = checkRepo(root).join('\n');
-    expect(out).toMatch(/"\*" must be owned by @getLooma\/docs-maintainers/);
+    expect(out).toMatch(/"\*" must be owned by @getLooma\/dev/);
     expect(out).toMatch(/"\/\.github\/" must be owned/);
   });
 
