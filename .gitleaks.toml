@@ -1,0 +1,16 @@
+# gitleaks for scripts/check-public: the default rules over the working tree, minus what is not
+# ours or is generated.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Dependencies, build output and caches"
+paths = [
+  '''(^|/)node_modules/''',
+  '''(^|/)dist/''',
+  '''(^|/)\.astro/''',
+  '''(^|/)\.direnv/''',
+  '''(^|/)\.data/''',
+  '''(^|/)\.git/''',
+  '''pnpm-lock\.yaml$''',
+]

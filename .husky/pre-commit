@@ -1,0 +1,19 @@
+# Pre-commit: format staged files with the repo's Prettier (same as `just fmt`) and re-stage
+# them. Installed by `pnpm install` (the `prepare` script). Skip once with `git commit
+# --no-verify`; CI's `just fmt-check` still catches anything that slips through.
+lint_staged=node_modules/.bin/lint-staged
+
+if [ ! -x "$lint_staged" ]; then
+  echo "pre-commit: lint-staged is missing; run 'pnpm install'" >&2
+  exit 1
+fi
+
+# GUI git clients don't inherit the direnv shell, so node may be absent; borrow the Nix shell.
+if command -v node >/dev/null 2>&1; then
+  exec "$lint_staged"
+elif command -v nix >/dev/null 2>&1; then
+  exec nix develop -c "$lint_staged"
+else
+  echo "pre-commit: node not found; open the repo in the dev shell (direnv/nix develop)" >&2
+  exit 1
+fi

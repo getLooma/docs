@@ -1,0 +1,21 @@
+# --- Nix / direnv / local dev state ---
+.data/
+.direnv/
+.envrc.local
+result
+result-*
+
+# --- Node / Astro ---
+node_modules/
+dist/
+.astro/
+
+# --- Env / secrets ---
+.env
+.env.*
+
+# --- Editor / OS ---
+.DS_Store
+
+# --- Local planning docs (never pushed) ---
+plans/

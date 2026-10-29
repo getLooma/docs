@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json.schemastore.org/prettierrc",
+  "printWidth": 100,
+  "tabWidth": 2,
+  "useTabs": false,
+  "semi": true,
+  "singleQuote": true,
+  "jsxSingleQuote": false,
+  "trailingComma": "es5",
+  "bracketSpacing": true,
+  "arrowParens": "always",
+  "endOfLine": "lf",
+  "proseWrap": "preserve",
+  "overrides": [
+    {
+      "files": ["*.md", "*.markdown"],
+      "options": {
+        "printWidth": 100
+      }
+    },
+    {
+      "files": ["*.yml", "*.yaml"],
+      "options": {
+        "singleQuote": false
+      }
+    },
+    {
+      "files": ["*.astro"],
+      "options": {
+        "parser": "astro"
+      }
+    }
+  ],
+  "plugins": ["prettier-plugin-astro"]
+}

@@ -1,0 +1,37 @@
+name: Drafted PR
+
+# Pull requests from drafts/ branches (the Looma docs bot): labelled `drafted`, no links to
+# other getLooma repositories, and approved by a docs maintainer (design.md D18). Reruns on
+# reviews. No secrets; the job only reads the pull request.
+on:
+  pull_request:
+    types: [opened, edited, labeled, unlabeled, synchronize, reopened]
+  pull_request_review:
+    types: [submitted, dismissed]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: drafted-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  drafted-pr:
+    name: drafted-pr
+    if: startsWith(github.event.pull_request.head.ref, 'drafts/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }} # the check code from main, never the PR's
+          persist-credentials: false
+      - name: Check label, body and approval
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/pulls/$PR/reviews" --paginate --slurp --jq 'add // []' > "$RUNNER_TEMP/reviews.json"
+          node scripts/check-drafted-pr.mjs "$RUNNER_TEMP/reviews.json"

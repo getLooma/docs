@@ -1,0 +1,17 @@
+# The product vocabulary (STYLE_GUIDE.md, "Words we use").
+extends: substitution
+message: "Use '%s' instead of '%s' (product vocabulary)."
+level: error
+ignorecase: true
+swap:
+  ticket clusters?: issue
+  workspaces?: organization
+  tenants?: organization
+  contacts?: customer
+  end users?: customer
+  shoppers?: customer
+  tickets?: conversation
+  AI drafts?: suggested reply
+  autorepl(y|ies): suggested reply
+  AI scores?: conversation analysis
+  sentiment reports?: conversation analysis

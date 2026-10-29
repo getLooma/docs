@@ -1,0 +1,21 @@
+---
+// Starlight's footer, plus the docs licence notice (openspec change docs-site, design.md D4).
+import Default from '@astrojs/starlight/components/Footer.astro';
+---
+
+<Default />
+<p class="docs-license">
+  Text licensed under
+  <a href="https://creativecommons.org/licenses/by/4.0/" rel="license">
+    CC BY 4.0
+  </a>
+  by the Looma docs contributors. Site code under the MIT License.
+</p>
+
+<style>
+  .docs-license {
+    margin-top: 1.5rem;
+    font-size: var(--sl-text-xs);
+    color: var(--sl-color-gray-3);
+  }
+</style>

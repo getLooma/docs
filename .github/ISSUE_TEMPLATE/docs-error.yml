@@ -1,0 +1,19 @@
+name: Something in the docs is wrong
+description: A page says something that is not true, is unclear, or has a broken link.
+labels: ["docs-error"]
+body:
+  - type: input
+    id: page
+    attributes:
+      label: Page
+      description: The URL of the page.
+      placeholder: https://docs.getlooma.io/...
+    validations:
+      required: true
+  - type: textarea
+    id: wrong
+    attributes:
+      label: What is wrong
+      description: Quote the sentence if you can, and say what you expected. Please don't include real customer data.
+    validations:
+      required: true

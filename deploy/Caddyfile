@@ -1,0 +1,60 @@
+# Production server for docs.getlooma.io (openspec change docs-site, design.md D13). TLS ends
+# at Coolify's proxy; this serves plain HTTP on $PORT (default 8080) from $SITE_ROOT (/srv).
+{
+	admin off
+	auto_https off
+	persist_config off
+}
+
+:{$PORT:8080} {
+	root * {$SITE_ROOT:/srv}
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# Starlight ships small inline scripts (theme) and Pagefind needs WebAssembly.
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+		Vary "Accept"
+		-Server
+	}
+
+	# Moved pages: permanent redirects rendered from redirects.json by scripts/routes.mjs.
+	import {$SITE_ROOT:/srv}/_redirects.caddy
+
+	# /path → /path/ when /path/ is a page.
+	@slashless {
+		not path */
+		file {path}/index.html
+	}
+	redir @slashless {path}/ permanent
+
+	@markdown_home {
+		path /
+		header Accept *text/markdown*
+	}
+	@markdown_page {
+		path_regexp page ^(.+)/$
+		header Accept *text/markdown*
+	}
+	@markdown_file path *.md
+	@text_file path *.txt
+	@hashed path /_astro/*
+
+	route {
+		# Content negotiation: Accept: text/markdown gets the page's Markdown copy.
+		rewrite @markdown_home /index.md
+		rewrite @markdown_page {re.page.1}.md
+		header @markdown_file Content-Type "text/markdown; charset=utf-8"
+		header @text_file Content-Type "text/plain; charset=utf-8"
+		header @hashed Cache-Control "public, max-age=31536000, immutable"
+		header Cache-Control "public, max-age=300"
+		file_server
+	}
+
+	handle_errors 404 {
+		rewrite * /404.html
+		file_server
+	}
+}

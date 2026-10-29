@@ -1,0 +1,17 @@
+# Prettier also reads .gitignore, so node_modules, dist, .astro, .data and .direnv are excluded.
+
+# Lockfiles and generated files are owned by their tools
+pnpm-lock.yaml
+flake.lock
+published-routes.txt
+
+# Verbatim third-party texts
+LICENSE-docs
+CODE_OF_CONDUCT.md
+src/fonts/
+
+# Written by the openspec CLI; keep its output byte-for-byte
+openspec/specs/
+.claude/commands/opsx/
+.claude/skills/
+.agents/
