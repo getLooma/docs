@@ -54,22 +54,24 @@ Astro Starlight, static output. Each version is the newest release that was at l
 on 2026-10-29, so a compromised release has had time to be noticed. Exact versions go in
 `package.json` (no ranges, checked by `just check`); Dependabot proposes bumps weekly.
 
-| Package                     | Version  | Released   | Role                                           |
-| --------------------------- | -------- | ---------- | ---------------------------------------------- |
-| `astro`                     | 7.3.8    | 2026-10-08 | site builder                                   |
-| `@astrojs/starlight`        | 0.42.6   | 2026-10-08 | docs theme, Pagefind search, sitemap           |
-| `starlight-llms-txt`        | 0.12.0   | 2026-09-15 | `llms.txt`, `llms-full.txt`, section bundles   |
-| `starlight-page-actions`    | 0.7.1    | 2026-08-18 | `.md` copies, copy and "open in" buttons       |
-| `starlight-links-validator` | 0.27.0   | 2026-10-09 | internal link and anchor validation            |
-| `astro-og-canvas`           | 0.13.2   | 2026-09-15 | per-page Open Graph images                     |
-| `node-html-parser`          | 9.0.4    | 2026-09-07 | HTML parsing in `scripts/check-site.mjs`       |
-| `vitest`                    | 5.0.4    | 2026-10-12 | tests for the check scripts                    |
-| `prettier`                  | 3.9.10   | 2026-10-10 | formatter (also in the Nix shell for openspec) |
-| `prettier-plugin-astro`     | 1.1.1    | 2026-10-09 | formats `.astro` files                         |
-| `husky`                     | 9.1.7    | 2024-11-18 | git hooks                                      |
-| `lint-staged`               | 17.6.0   | 2026-09-26 | pre-commit formatting                          |
-| Caddy image                 | `2.11.7` | 2026-10    | production server, pinned by digest            |
-| Node (Nix, image build)     | 22       | nixpkgs    | build runtime                                  |
+| Package                     | Version  | Released   | Role                                                |
+| --------------------------- | -------- | ---------- | --------------------------------------------------- |
+| `astro`                     | 7.3.8    | 2026-10-08 | site builder                                        |
+| `@astrojs/starlight`        | 0.42.6   | 2026-10-08 | docs theme, Pagefind search, sitemap                |
+| `starlight-llms-txt`        | 0.12.0   | 2026-09-15 | `llms.txt`, `llms-full.txt`, section bundles        |
+| `starlight-page-actions`    | 0.7.1    | 2026-08-18 | `.md` copies, copy and "open in" buttons            |
+| `starlight-links-validator` | 0.27.0   | 2026-10-09 | internal link and anchor validation                 |
+| `astro-og-canvas`           | 0.13.2   | 2026-09-15 | per-page Open Graph images                          |
+| `node-html-parser`          | 9.0.4    | 2026-09-07 | HTML parsing in `scripts/check-site.mjs`            |
+| `yaml`                      | 2.9.1    | 2026-09-11 | frontmatter in the config and check scripts         |
+| `canvaskit-wasm`            | 0.42.0   | 2026-08-18 | `astro-og-canvas`'s renderer (pnpm needs it direct) |
+| `vitest`                    | 5.0.4    | 2026-10-12 | tests for the check scripts                         |
+| `prettier`                  | 3.9.10   | 2026-10-10 | formatter (also in the Nix shell for openspec)      |
+| `prettier-plugin-astro`     | 1.1.1    | 2026-10-09 | formats `.astro` files                              |
+| `husky`                     | 9.1.7    | 2024-11-18 | git hooks                                           |
+| `lint-staged`               | 17.6.0   | 2026-09-26 | pre-commit formatting                               |
+| Caddy image                 | `2.11.7` | 2026-10    | production server, pinned by digest                 |
+| Node (Nix, image build)     | 22       | nixpkgs    | build runtime                                       |
 
 The peer ranges agree: Starlight 0.42.6 needs `astro ^7.2.10`, `starlight-links-validator`
 `astro >=7.2.10` and Starlight `>=0.42.0`, and `starlight-llms-txt` `@astrojs/starlight >=0.41.0`.
@@ -330,10 +332,17 @@ needs no network. More rules can be added later without changing CI.
 
 ### D13. Hosting: our own small image on Coolify (recommended)
 
-**Recommendation:** `ghcr.io/getlooma/docs`, a two-stage `Dockerfile`. A Node 22 stage runs
-`pnpm install --frozen-lockfile && pnpm build && node scripts/routes.mjs`. A
-`caddy:2.11.7-alpine` stage, pinned by digest, copies `dist/` and `deploy/Caddyfile`. A Coolify
-Docker Image application runs it at docs.getlooma.io on port 8080. Why:
+**Recommendation (approved by the owner, with the Dockerfile exception):**
+`ghcr.io/getlooma/docs`, a one-stage `Dockerfile`: `caddy:2.11.7-alpine`, pinned by digest, with
+`deploy/Caddyfile` and the `dist/` that CI built with `just build` and
+`node scripts/routes.mjs --caddy dist` in the Nix shell, running as an unprivileged user. A
+Coolify Docker Image application runs it at docs.getlooma.io on port 8080.
+
+_Implementation note:_ the design first had a Node build stage in the Dockerfile. Building in
+the Nix shell instead keeps one toolchain, and keeps git history for Starlight's `lastUpdated`
+(a Docker build context has no `.git`). The image is a packaging step only. Caddy 2.11.7 is also
+in the dev shell, so `just check` runs `scripts/smoke --local` against the real Caddyfile without
+Docker. CI smoke-tests the image itself. Why this host:
 
 - **Content negotiation** on `Accept: text/markdown`, which the owner asked for, takes a few lines
   of Caddyfile. A pure static host cannot do it, or needs a vendor's edge-function product.
@@ -405,7 +414,9 @@ certificate.
 --frozen-lockfile`, `nix develop -c just check`.
     - `image`: builds the Dockerfile without pushing, runs `scripts/smoke`.
     - `dco`.
-    - `drafted-pr`: runs on `drafts/` branches only.
+  - `drafted-pr` is its own workflow, `drafted-pr.yml` (`pull_request` and `pull_request_review`).
+    A skipped job in `ci.yml` on a review event would show up as a passing `check` run, so the
+    review trigger stays out of `ci.yml`. It reads its check script from the base commit.
   - No secrets anywhere, so fork pull requests run it unchanged. `GITHUB_TOKEN` is read-only for
     forks anyway.
 - **No `pull_request_target`, no `workflow_run`**, enforced by `check-workflows.mjs`. Those
@@ -481,7 +492,7 @@ repository's side:
   with contents and pull requests write).
 - It uses branches `drafts/<topic>` and the label `drafted`.
 - The body is written in user terms and holds no private links.
-- `ci.yml`'s `drafted-pr` job enforces the label and the no-private-links rule on `drafts/`
+- `drafted-pr.yml` enforces the label, the no-private-links rule and a maintainer's approval on `drafts/`
   branches.
 - The bot never merges: the drafting workflow has no merge step, and a team member reviews,
   edits on the branch if needed, and merges. GitHub does not let an App approve its own pull
@@ -522,6 +533,42 @@ method.
 **Bypass:** the list stays empty in every phase. If the owner wants an emergency bypass (for
 example the organization admin role, "pull requests only"), it is added to `main.json` like any
 other rule; this is an open question.
+
+## Implementation notes (apply, 2026-10-29)
+
+- **`llms.txt`:** the plugin's own `llms.txt` links only the bundle files. The page index the
+  spec requires (every page, its `.md` URL and its description, by section) is passed in the
+  plugin's `details` option, built in `astro.config.mjs` from the page frontmatter
+  (`scripts/lib/pages.mjs`). No second route was needed.
+- **`.md` copies:** `starlight-page-actions` writes them with the title as `h1` but without the
+  description. A small local integration (`scripts/lib/markdown-copies.mjs`) inserts
+  `> description` after the title at `astro:build:done`.
+- **`description` is required:** `docsSchema({ extend })` does override Starlight's optional
+  `description`. A page without one fails `just build` ("description: Required").
+- **Sidebar:** Starlight 0.42 needs `{ label, items: [{ autogenerate }] }`, not a labelled
+  `autogenerate`.
+- **OG images:** `astro-og-canvas` needs `canvaskit-wasm` as a direct dependency under pnpm. The
+  Inter fonts are vendored in `src/fonts/` (SIL OFL 1.1), so the build needs no network. With
+  100 fixture pages the whole build took 5 s, far under the 60 s fallback threshold.
+- **JavaScript budget:** the home page ships 12,266 bytes of client script, so the budget is
+  14,720 (`scripts/budget.json`).
+- **CSP:** Starlight inlines small scripts (theme) and Pagefind runs WebAssembly. `script-src`
+  is therefore `'self' 'unsafe-inline' 'wasm-unsafe-eval'`, not `'self'` only. There is no
+  third-party origin anywhere.
+- **Trailing slash:** Caddy's own directory redirect is a 308. An explicit `@slashless` rule
+  answers `/path` with a `301` to `/path/` when that page exists.
+- **Vale** treats `.mdx` as Markdown (`[formats] mdx = md`), because Vale 3's MDX parser needs
+  an extra npm tool.
+- **Public-content scan:** the environment-variable rule applies to pages only. Tooling must name
+  CI variables, and users never need internal ones. The allowlist holds the local dev and smoke
+  addresses and the two examples in this change's own scenarios.
+- **Placeholders:** the support address (product-question issue form), the code-of-conduct
+  contact and the security email are `<…: to confirm>` placeholders. No check fails on them.
+  The owner replaces them (tasks.md 9.9).
+- **Bot identity:** `pr-review.yml` allows `looma-docs-bot[bot]`. If the App gets another slug,
+  that line changes with it.
+- **Logo:** `src/assets/logo.svg` and `public/favicon.svg` are a plain placeholder mark, because
+  no Looma logo asset exists in the code repositories yet (tasks.md 9.9).
 
 ## Risks / Trade-offs
 

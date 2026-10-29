@@ -135,6 +135,7 @@ list.
 
 #### Scenario: A drafted pull request carries its label
 
-- **WHEN** the `drafted-pr` job in `ci.yml` runs on a pull request from a `drafts/` branch
+- **WHEN** the `drafted-pr` job (workflow `drafted-pr.yml`) runs on a pull request from a
+  `drafts/` branch
 - **THEN** it fails if the pull request lacks the `drafted` label or its body contains
   `github.com/getLooma/` links to any repository other than this one

@@ -26,9 +26,10 @@ to `main`.
 `scripts/check-public` SHALL scan every tracked file and fail on: secrets (`gitleaks`), private
 network addresses and internal host names (RFC 1918 and link-local IPs, `localhost` with a port,
 host names ending in `.internal`, `.local` or `.lan`), container registry paths of private images,
-links to any `github.com/getLooma/` repository other than `docs`, and upper-case identifiers that
-look like environment variables (`[A-Z][A-Z0-9]*_[A-Z0-9_]+`) unless listed in
-`scripts/public-allowlist.txt`. Lines may opt out only through that allowlist, which is owned by
+links to any `github.com/getLooma/` repository other than `docs`, and, in pages under
+`src/content/`, upper-case identifiers that look like environment variables
+(`[A-Z][A-Z0-9]*_[A-Z0-9_]*[A-Z0-9]`). Tooling files may name CI variables. A match is accepted
+only when it appears verbatim in `scripts/public-allowlist.txt`. Lines may opt out only through that allowlist, which is owned by
 the owners in CODEOWNERS.
 
 #### Scenario: An internal address fails
@@ -81,7 +82,8 @@ check`) these repository settings through `gh api`:
 - issues and discussions are enabled;
 - secret scanning and push protection are on.
 
-`just check` SHALL validate the script's desired values offline, so a change to them is reviewed
+The desired values SHALL live in `scripts/repo-settings.json`, and `just check` SHALL validate
+them offline, so a change to them is reviewed
 like any other file.
 
 #### Scenario: Drifted settings are reported
@@ -92,7 +94,7 @@ like any other file.
 
 #### Scenario: Weakened desired values fail the check
 
-- **WHEN** the desired values in `scripts/repo-settings` allow merge commits or turn off SHA
+- **WHEN** the desired values in `scripts/repo-settings.json` allow merge commits or turn off SHA
   pinning
 - **THEN** `just check` fails and names the setting
 
