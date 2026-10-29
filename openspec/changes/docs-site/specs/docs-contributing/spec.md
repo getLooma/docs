@@ -26,24 +26,73 @@ launch (design.md D5); this requirement is replaced if a CLA is chosen.
 - **WHEN** a pull request contains a commit without a `Signed-off-by:` trailer
 - **THEN** the `dco` job fails and names the commit
 
-### Requirement: Pull requests follow a template and are reviewed
+### Requirement: Pull requests follow a template
 
 `.github/PULL_REQUEST_TEMPLATE.md` SHALL ask what changed and why, which pages, whether the
 change describes released behaviour, and SHALL carry checkboxes for: style guide followed, `just
-check` passed, no internal details, sign-off. `.github/CODEOWNERS` SHALL assign every path to the
-docs maintainers team, and `.github/` and the `scripts/` checks to the owners. `main` SHALL require
-one approving review from a code owner, a passing `ci.yml`, and a linear history; nobody, including
-the docs bot, merges without that review.
+check` passed, no internal details, sign-off.
 
 #### Scenario: The template has the checklist
 
 - **WHEN** `just check` runs
 - **THEN** it fails if `.github/PULL_REQUEST_TEMPLATE.md` lacks any of the four checklist items
 
-#### Scenario: CODEOWNERS covers every path
+### Requirement: Anyone may contribute, only the Looma team merges
+
+Anyone SHALL be able to open issues, take part in discussions, and open pull requests from a
+fork. Only members of the GitHub team `@getLooma/docs-maintainers`, which holds the repository's
+write access, SHALL be able to merge; every other account has read access only.
+`.github/CODEOWNERS` SHALL assign `*` to `@getLooma/docs-maintainers`, and `/.github/` and
+`/scripts/` to the owner. `CONTRIBUTING.md` SHALL state that anyone can propose a change and that
+a Looma team member reviews and merges it.
+
+#### Scenario: CODEOWNERS names the team and the owner
 
 - **WHEN** `just check` runs
-- **THEN** it fails if `.github/CODEOWNERS` has no `*` rule or no rule for `/.github/` and `/scripts/`
+- **THEN** it fails if `.github/CODEOWNERS` has no `*` rule for `@getLooma/docs-maintainers`, or
+  no owner rule for `/.github/` and `/scripts/`
+
+#### Scenario: Only the team has write access
+
+- **WHEN** `just repo-settings check` runs with an admin token
+- **THEN** it fails if any team or user other than `@getLooma/docs-maintainers` and the
+  organization owners has write, maintain or admin access
+
+### Requirement: The main branch is protected by a ruleset kept as code
+
+`.github/rulesets/main.json` SHALL be the definition of the active ruleset `main` on the default
+branch, matching what is applied on GitHub. `just ruleset-apply` SHALL create or update it, and
+`just ruleset-check` SHALL compare it with the live ruleset. Both go through `gh api` and need a
+login with admin access to the repository.
+
+The ruleset SHALL hold the phase 1 rules:
+
+- deletion blocked;
+- no force pushes (`non_fast_forward`);
+- a pull request for every change, with 0 required approvals;
+- stale reviews dismissed on new pushes;
+- review threads resolved before merge;
+- extra approval for unattributed changes;
+- squash merge as the only merge method;
+- an empty bypass list.
+
+Phases 2 and 3 are a documented follow-up (design.md D19), not yet required:
+
+- **Phase 2**, once CI exists: required status checks for `just check`, plus DCO if it is adopted.
+- **Phase 3**, once a second team member joins: 1 required approval, code-owner review and
+  last-push approval.
+
+#### Scenario: The ruleset file holds the phase 1 rules
+
+- **WHEN** `just check` runs
+- **THEN** it fails if `.github/rulesets/main.json` lacks any phase 1 rule or parameter, allows a
+  merge method other than squash, or has a non-empty `bypass_actors`
+
+#### Scenario: The live ruleset matches the file
+
+- **WHEN** `just ruleset-check` runs with an admin login
+- **THEN** it exits non-zero and prints both versions if the ruleset on GitHub differs from the
+  file
 
 ### Requirement: Issue forms cover the common reports
 
@@ -76,10 +125,13 @@ goes in public docs. Vale SHALL enforce the product vocabulary from a style vend
 ### Requirement: Drafted pull requests are received like any other
 
 A pull request drafted by automation SHALL come from the Looma docs bot on a branch starting
-with `drafts/`, labelled `drafted`, and SHALL pass the same `ci.yml` and the same review rule as
-any other pull request. Its body SHALL describe the user-facing change in user terms and SHALL
+with `drafts/`, labelled `drafted`, and SHALL pass the same `ci.yml` and the same ruleset as any
+other pull request. It is never merged by the bot; a member of `@getLooma/docs-maintainers`
+reviews and merges it (by process in phase 1; enforced by the ruleset's approval rule from phase
+3, design.md D19). Its body SHALL describe the user-facing change in user terms and SHALL
 NOT link to or name a private repository, pull request, issue or person outside the docs repo.
-The docs bot SHALL NOT be able to approve or merge.
+The docs bot SHALL NOT be able to approve or merge, and SHALL NOT be in the ruleset's bypass
+list.
 
 #### Scenario: A drafted pull request carries its label
 

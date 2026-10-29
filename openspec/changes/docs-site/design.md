@@ -91,6 +91,7 @@ and section files.
 .github/
   workflows/ci.yml  deploy.yml  links.yml  pr-review.yml
   ISSUE_TEMPLATE/docs-error.yml  missing-page.yml  product-question.yml  config.yml
+  rulesets/main.json
   PULL_REQUEST_TEMPLATE.md  CODEOWNERS  dependabot.yml
 .claude/settings.json   .claude/skills/openspec-*   .claude/commands/opsx/   (openspec init)
 .husky/pre-commit       .lintstagedrc.json
@@ -160,10 +161,14 @@ CONTRIBUTING.md sections:
    template.
 3. **What reviewers look for:** accuracy against the product, the style guide, the checklist,
    screenshots with invented data only.
-4. **Review rules:**
-   - One approving review from a code owner.
-   - `ci.yml` green.
-   - Squash merge with linear history.
+4. **Who reviews and merges:** said plainly at the top of the section: anyone can propose a
+   change; a member of the Looma team (`@getLooma/docs-maintainers`) reviews and merges it.
+   Outside contributors have read access, so they work from a fork.
+   **Review rules:**
+   - Every change is a pull request; nobody pushes to `main`.
+   - A team member reviews; from phase 3 (D19) the ruleset requires that approval.
+   - `ci.yml` green (required from phase 2).
+   - Review threads resolved; squash merge only.
    - Maintainers answer within five working days.
    - A pull request inactive for 30 days after a review request is closed with thanks, and can be
      reopened.
@@ -407,13 +412,14 @@ certificate.
   triggers run with the base repository's secrets, and with a checkout of fork code they are the
   classic way public repositories leak tokens.
 - **Actions pinned to full commit SHAs** with a version comment. Dependabot keeps them current.
-- **Repository settings (owner):**
-  - "Require approval for all external contributors" for workflow runs.
-  - Default `GITHUB_TOKEN` permission read-only.
-  - "Allow GitHub Actions to create and approve pull requests" off.
-  - Branch protection on `main`: code-owner review, `check`, `image` and `dco` required, linear
-    history, no force push.
+- **Repository settings, as code (`scripts/repo-settings`, D19):**
+  - "Require approval for all external contributors" for workflow runs from forks.
+  - Default `GITHUB_TOKEN` permission read-only; Actions may not create or approve pull requests.
+  - Actions must be pinned to a full commit SHA (the repository setting, on top of
+    `check-workflows.mjs`).
+  - Squash merge only; head branches deleted after merge; issues and discussions on.
   - Secret scanning and push protection on.
+  - The `main` ruleset is D19.
 - **`pr-review.yml`:** the advisory review from the other repositories, with the same gating. It
   runs on same-repository pull requests (the docs bot's drafts, team members' branches), or on
   `/review` from an owner, member or collaborator, after a gate rejects fork pull requests. It
@@ -477,11 +483,52 @@ repository's side:
 - The body is written in user terms and holds no private links.
 - `ci.yml`'s `drafted-pr` job enforces the label and the no-private-links rule on `drafts/`
   branches.
-- Branch protection means the bot cannot merge, and GitHub does not let an App approve its own
-  pull request. A maintainer reviews, edits on the branch if needed, and merges.
+- The bot never merges: the drafting workflow has no merge step, and a team member reviews,
+  edits on the branch if needed, and merges. GitHub does not let an App approve its own pull
+  request. In phase 1 (D19), with 0 required approvals, this rests on process: the App's token
+  has contents write, so the API would let it merge. From phase 2 the `drafted-pr` status check
+  also requires an approving review from a `@getLooma/docs-maintainers` member on `drafts/`
+  branches (it reruns on `pull_request_review`), and from phase 3 the ruleset enforces approval
+  for every pull request. The App is never in the bypass list.
 - The label `drafted` lets the team measure how often drafts merge unchanged.
 
+### D19. Merge rights and the `main` ruleset, in phases
+
+**Who may do what:** anyone may open issues, join discussions and open pull requests from a
+fork. Only `@getLooma/docs-maintainers` (an organization team, created by the owner) has write
+access, so only its members can merge. Everyone else has read access. `CODEOWNERS` assigns `*`
+to that team, and `/.github/` and `/scripts/` to the owner.
+
+**The ruleset is code.** `.github/rulesets/main.json` is the request body of the active ruleset
+`main` (id 26152208, applied by the owner on 2026-10-29), committed to match it exactly.
+`just ruleset-apply` creates or updates it by name with `gh api`, and `just ruleset-check` diffs
+the live ruleset against the file. Both need an admin login, so they run on the owner's machine,
+never in CI. `check-repo.mjs` validates the file offline in `just check`. A change to the ruleset
+is therefore a reviewed pull request first, then an apply.
+
+The rules are phased because the owner is the only team member for now, and GitHub never lets
+an author approve their own pull request.
+
+| Phase       | Rules                                                                                                                                                                                                              | When                              |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------- |
+| 1 (applied) | deletion blocked; no force pushes; pull request required with 0 approvals; stale reviews dismissed on push; review threads resolved; extra approval for unattributed changes; squash merge only; bypass list empty | now                               |
+| 2           | required status checks from GitHub Actions (integration 15368), up to date with `main`: `check` (`just check`), `image`, and `dco` if the DCO is adopted; plus the `drafted-pr` check (D18)                        | when `ci.yml` is merged and green |
+| 3           | `required_approving_review_count: 1`, `require_code_owner_review: true`, `require_last_push_approval: true`                                                                                                        | when a second team member joins   |
+
+Each phase is a pull request that edits `main.json`, then `just ruleset-apply` and
+`just ruleset-check`. Linear history needs no separate rule, because squash is the only merge
+method.
+
+**Bypass:** the list stays empty in every phase. If the owner wants an emergency bypass (for
+example the organization admin role, "pull requests only"), it is added to `main.json` like any
+other rule; this is an open question.
+
 ## Risks / Trade-offs
+
+- **Phase 1 merges need no approval** → only team members can merge at all, and the only member
+  is the owner. Outside pull requests still need a team member to merge them. Drafted pull
+  requests rely on process until phase 2's `drafted-pr` check (D18). Phase 3 closes the gap as
+  soon as there is a second reviewer.
 
 - **A drafted page describes something not yet released** → the private side holds drafts until
   release. The human review here is the last gate, with the template checkbox "describes released
@@ -512,7 +559,9 @@ section 9), first deploy, Search Console. The first content change follows. Roll
   redirect there.
 - **Hosting:** Coolify image (recommended) or GitHub Pages (zero secrets, fewer features). Also
   the Dockerfile exception to the no-Dockerfile convention.
-- **Who are the code owners:** a `docs-maintainers` team, or named people.
+- **Emergency bypass on the ruleset:** none today. Should the organization admin get a
+  "pull requests only" bypass for emergencies (D19)?
+- **Second team member:** who, and when? Phase 3 of the ruleset waits for them.
 - **Product questions in issues:** the third issue form redirects to support. Which support
   address or URL should it link to?
 - **A French locale at launch?** The structure allows it later. Say if it is needed sooner.

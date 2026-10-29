@@ -68,6 +68,34 @@ full commit SHA.
 - **THEN** its job condition requires `github.event.pull_request.head.repo.full_name ==
 github.repository` for pull request events
 
+### Requirement: Repository settings are kept as code
+
+`scripts/repo-settings` SHALL apply (`just repo-settings apply`) and verify (`just repo-settings
+check`) these repository settings through `gh api`:
+
+- workflow runs from fork pull requests need approval for all external contributors;
+- the default `GITHUB_TOKEN` permission is read only, and GitHub Actions may not create or
+  approve pull requests;
+- actions must be pinned to a full commit SHA;
+- squash merge is the only merge method, and head branches are deleted after merge;
+- issues and discussions are enabled;
+- secret scanning and push protection are on.
+
+`just check` SHALL validate the script's desired values offline, so a change to them is reviewed
+like any other file.
+
+#### Scenario: Drifted settings are reported
+
+- **WHEN** `just repo-settings check` runs with an admin token and the default `GITHUB_TOKEN`
+  permission on GitHub is `write`
+- **THEN** it exits non-zero and names the setting
+
+#### Scenario: Weakened desired values fail the check
+
+- **WHEN** the desired values in `scripts/repo-settings` allow merge commits or turn off SHA
+  pinning
+- **THEN** `just check` fails and names the setting
+
 ### Requirement: External links are checked on a schedule
 
 `links.yml` SHALL run `lychee` over the built site weekly and by hand, and SHALL open or update one
