@@ -29,7 +29,7 @@ jobs:
         run: |
           set +e
           nix develop -c lychee --no-progress --format markdown --output "$RUNNER_TEMP/links.md" \
-            --exclude-path dist/pagefind --scheme https --scheme http 'dist/**/*.html'
+            --root-dir "$PWD/dist" --exclude '^https://docs\.getlooma\.io/' --exclude '^https://(chatgpt\.com|claude\.ai)/' --exclude-path dist/pagefind --scheme https --scheme http 'dist/**/*.html'
           echo "status=$?" >> "$GITHUB_OUTPUT"
       - name: Open or update the broken-links issue
         if: steps.lychee.outputs.status != '0'
