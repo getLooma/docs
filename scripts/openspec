@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# OpenSpec CLI, pinned. Runs via pnpm dlx so nothing is installed globally.
+# Bump the version here (and in MEMORY.md if behaviour changes), then re-run
+# `openspec init --tools claude,agents` to refresh the vendored skills/commands.
+exec pnpm dlx @fission-ai/openspec@1.11.0 "$@"

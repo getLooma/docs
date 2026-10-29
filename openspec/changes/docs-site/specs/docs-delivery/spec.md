@@ -1,0 +1,118 @@
+## ADDED Requirements
+
+### Requirement: just check is the CI gate
+
+`just check` SHALL run, and fail on the first failure of: the Prettier check, `actionlint`, the
+dependency pin check, the vitest tests of the check scripts, `just build` (which includes the
+frontmatter schema and `starlight-links-validator`), the built-site check
+(`scripts/check-site.mjs`), the redirect check (`scripts/check-routes.mjs`), the public-content
+scan (`scripts/check-public`), the repository-file checks (licenses, templates, CODEOWNERS) and
+Vale. `ci.yml` SHALL run `just check` in the Nix dev shell on every pull request and every push
+to `main`.
+
+#### Scenario: CI runs the same gate
+
+- **WHEN** `.github/workflows/ci.yml` is inspected
+- **THEN** its `check` job runs `nix develop -c just check` for `pull_request` and for pushes to
+  `main`
+
+#### Scenario: A broken internal link fails
+
+- **WHEN** a page links to `/inbox/does-not-exist/`
+- **THEN** `just build` fails with `starlight-links-validator` naming the page and the link
+
+### Requirement: Nothing internal reaches the public repository
+
+`scripts/check-public` SHALL scan every tracked file and fail on: secrets (`gitleaks`), private
+network addresses and internal host names (RFC 1918 and link-local IPs, `localhost` with a port,
+host names ending in `.internal`, `.local` or `.lan`), container registry paths of private images,
+links to any `github.com/getLooma/` repository other than `docs`, and upper-case identifiers that
+look like environment variables (`[A-Z][A-Z0-9]*_[A-Z0-9_]+`) unless listed in
+`scripts/public-allowlist.txt`. Lines may opt out only through that allowlist, which is owned by
+the owners in CODEOWNERS.
+
+#### Scenario: An internal address fails
+
+- **WHEN** a page contains `http://10.0.3.7:8080/healthz`
+- **THEN** `just check` fails and names the file and line
+
+#### Scenario: An environment variable name fails
+
+- **WHEN** a page mentions `SHOPIFY_CLIENT_SECRET`
+- **THEN** `just check` fails, because the name is not in the allowlist
+
+#### Scenario: A link to a private repository fails
+
+- **WHEN** a page links to `https://github.com/getLooma/<any repository but docs>/pull/12`
+- **THEN** `just check` fails and names the link
+
+### Requirement: Fork pull requests never see secrets
+
+No workflow SHALL use the `pull_request_target` or `workflow_run` trigger. Every workflow SHALL
+declare top-level `permissions` with `contents: read` and only the extra scopes a job needs. The
+jobs that run pull request code (`ci.yml`) SHALL reference no secret. `pr-review.yml` SHALL run
+only for pull requests whose head repository is this repository, or for a `/review` comment by an
+owner, member or collaborator on such a pull request. Third-party actions SHALL be pinned to a
+full commit SHA.
+
+#### Scenario: No dangerous trigger
+
+- **WHEN** `just check` runs `scripts/check-workflows.mjs` over `.github/workflows/`
+- **THEN** it fails if any workflow uses `pull_request_target` or `workflow_run`, lacks top-level
+  `permissions`, pins a third-party action by tag instead of SHA, or references `secrets.` in
+  `ci.yml`
+
+#### Scenario: The review skips forks
+
+- **WHEN** `pr-review.yml` is inspected
+- **THEN** its job condition requires `github.event.pull_request.head.repo.full_name ==
+github.repository` for pull request events
+
+### Requirement: External links are checked on a schedule
+
+`links.yml` SHALL run `lychee` over the built site weekly and by hand, and SHALL open or update one
+issue labelled `broken-links` listing the failures. It SHALL NOT run on pull requests, so a flaky
+external site never blocks a merge.
+
+#### Scenario: The link check is scheduled only
+
+- **WHEN** `links.yml` is inspected
+- **THEN** its triggers are `schedule` and `workflow_dispatch` only
+
+### Requirement: Only main is deployed, as an immutable image
+
+`deploy.yml` SHALL run only for pushes to `main` and for a manual run, never for a pull request.
+It SHALL run `just check`, build the image `ghcr.io/getlooma/docs:<full sha>` (Caddy serving
+`dist/`), smoke-test it (pages, `.md` copies, content negotiation, a redirect, `robots.txt`,
+`llms.txt`, security headers), push it, move the `live` tag to it, and trigger the Coolify
+deployment. The deploy job SHALL run in the GitHub environment `production`, limited to `main`,
+which alone holds the Coolify token. A manual run with a `sha` input SHALL move `live` back to
+that image and redeploy without rebuilding.
+
+#### Scenario: Pull requests never deploy
+
+- **WHEN** `deploy.yml` is inspected
+- **THEN** it has no `pull_request` trigger, and its deploy job has `environment: production`
+
+#### Scenario: The smoke test gates the push
+
+- **WHEN** the image's smoke test fails
+- **THEN** nothing is pushed and no deployment is triggered
+
+### Requirement: The server sends safe headers
+
+The production server SHALL send `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`,
+`Referrer-Policy: strict-origin-when-cross-origin` and a `Content-Security-Policy` that allows only
+the site's own scripts, styles, images and fonts, and SHALL serve `.md` as `text/markdown;
+charset=utf-8` and `.txt` as `text/plain; charset=utf-8`. Unknown paths SHALL return the site's
+`404` page with status 404.
+
+#### Scenario: Headers are present
+
+- **WHEN** the smoke test requests `/`
+- **THEN** each listed header is present
+
+#### Scenario: Unknown paths are 404
+
+- **WHEN** the smoke test requests `/no-such-page/`
+- **THEN** the status is 404 and the body is the site's 404 page

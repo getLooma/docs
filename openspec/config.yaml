@@ -1,0 +1,37 @@
+schema: spec-driven
+
+context: |
+  Looma docs: the public, open-source user documentation for Looma (multi-tenant SaaS for
+  support teams), published at docs.getlooma.io. An Astro Starlight site: Markdown pages under
+  src/content/docs/, site code and config at the repo root. Docs text is CC BY 4.0, site code
+  and config MIT. Everything runs from the Nix dev shell; `just check` is the CI gate.
+  This repository is PUBLIC: nothing internal (hostnames, private repository details, env vars
+  that don't matter to users, unreleased features, customer data, security internals) ever
+  lands here, in a page, a commit, an issue or an OpenSpec change.
+  Product vocabulary (use exactly these terms, as Looma's UI does): organization, integration,
+  customer, conversation, message, conversation analysis, issue (kind / severity / status),
+  suggested reply. Looma's code repositories are private; this one never names their internals.
+
+rules:
+  proposal:
+    - Include a "Non-goals" section
+    - Name every page, directory, config file, plugin and workflow touched
+    - Never describe an unreleased feature; docs follow releases
+    - If the change is trivial, say so in one line and keep the proposal to a few sentences
+  specs:
+    - Use the product vocabulary; do not invent synonyms for existing terms
+    - Every requirement must be testable by `just check` or a named CI job
+  design:
+    - Pin every new dependency to an exact version and record it in the design
+    - Say how the change keeps internal details out of the public repository
+  tasks:
+    - Each task names how it is verified
+    - The final task is always `just check`
+
+operations:
+  apply:
+    guidance:
+      - Read STYLE_GUIDE.md before writing user-facing text
+  archive:
+    guidance:
+      - Confirm `just check` passed in this session before archiving
