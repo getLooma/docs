@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 // DCO check for the `dco` job in ci.yml (docs-contributing spec, "Contributions are signed
 // off"): every commit in base..head carries a Signed-off-by trailer matching its author, except
-// commits from Dependabot. Usage: check-dco.mjs <base> <head>
+// commits from Dependabot and merge commits. A merge commit (for example GitHub's "Update branch",
+// which brings main into a pull request) authors no change of its own; the pull request is
+// squash-merged, so only its own commits' work reaches main. Usage: check-dco.mjs <base> <head>
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 
@@ -10,10 +12,11 @@ export const EXEMPT = [
   /^49699333\+dependabot\[bot\]@users\.noreply\.github\.com$/,
 ];
 
-/** @param {{ sha: string, name: string, email: string, body: string }[]} commits */
+/** @param {{ sha: string, name: string, email: string, body: string, parents?: number }[]} commits */
 export function dcoErrors(commits) {
   const errors = [];
   for (const c of commits) {
+    if ((c.parents ?? 1) > 1) continue;
     if (EXEMPT.some((re) => re.test(c.name) || re.test(c.email))) continue;
     const trailers = [...c.body.matchAll(/^Signed-off-by:\s*(.+?)\s*<([^>]+)>\s*$/gim)];
     const ok = trailers.some(([, , email]) => email.toLowerCase() === c.email.toLowerCase());
@@ -30,7 +33,7 @@ export function readCommits(base, head) {
   const sep = '\x1e';
   const out = execFileSync(
     'git',
-    ['log', `--format=%H%x1f%an%x1f%ae%x1f%B${sep}`, `${base}..${head}`],
+    ['log', `--format=%H%x1f%an%x1f%ae%x1f%P%x1f%B${sep}`, `${base}..${head}`],
     {
       encoding: 'utf8',
     }
@@ -40,8 +43,14 @@ export function readCommits(base, head) {
     .map((r) => r.trim())
     .filter(Boolean)
     .map((r) => {
-      const [sha, name, email, body] = r.split('\x1f');
-      return { sha, name, email, body: body ?? '' };
+      const [sha, name, email, parents, body] = r.split('\x1f');
+      return {
+        sha,
+        name,
+        email,
+        parents: parents.split(' ').filter(Boolean).length,
+        body: body ?? '',
+      };
     });
 }
 
