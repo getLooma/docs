@@ -49,7 +49,7 @@ globally. Run from the repo root inside the shell (`direnv allow`, or `nix devel
 
 ## Contributions and merging
 
-Anyone may propose; only `@getLooma/docs-maintainers` merges. `main` is protected by the
+Anyone may propose; only `@getLooma/dev` merges. `main` is protected by the
 ruleset in `.github/rulesets/main.json` (phased, design.md D19). Every commit is signed off
 (`git commit -s`, DCO). Pull requests from `drafts/` branches come from the Looma docs bot and
 are reviewed and merged by a maintainer like any other; the bot never merges.

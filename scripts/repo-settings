@@ -42,8 +42,8 @@ check() {
     };
     for (const k of Object.keys(want)) walk(want[k], live[k], k);
     const writers = live.teams.filter((t) => ["push", "maintain", "admin"].includes(t.permission));
-    for (const t of writers) if (t.slug !== "docs-maintainers") diffs.push(`team ${t.slug} has ${t.permission} access`);
-    if (!writers.some((t) => t.slug === "docs-maintainers")) diffs.push("team docs-maintainers lacks write access");
+    for (const t of writers) if (t.slug !== "dev") diffs.push(`team ${t.slug} has ${t.permission} access`);
+    if (!writers.some((t) => t.slug === "dev")) diffs.push("team dev lacks write access");
     for (const c of live.collaborators) diffs.push(`direct collaborator ${c.login} (use the team instead)`);
     for (const d of diffs) console.error(`repo-settings: ${d}`);
     if (diffs.length) process.exit(1);

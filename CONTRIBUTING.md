@@ -36,7 +36,7 @@ download it, unzip it and run `npx serve site`.
 ## Who reviews and merges
 
 - Outside contributors have read access, so they work from a fork. Only members of the
-  `@getLooma/docs-maintainers` team can merge.
+  `@getLooma/dev` team can merge.
 - Every change to `main` goes through a pull request. Nobody pushes to `main` directly, and
   pull requests are squash-merged.
 - A team member reviews every pull request. They check accuracy against the product, the
