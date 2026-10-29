@@ -31,6 +31,31 @@
         "required_reviewers": []
       },
       "type": "pull_request"
+    },
+    {
+      "type": "required_status_checks",
+      "parameters": {
+        "strict_required_status_checks_policy": true,
+        "do_not_enforce_on_create": false,
+        "required_status_checks": [
+          {
+            "context": "check",
+            "integration_id": 15368
+          },
+          {
+            "context": "image",
+            "integration_id": 15368
+          },
+          {
+            "context": "dco",
+            "integration_id": 15368
+          },
+          {
+            "context": "drafted-pr",
+            "integration_id": 15368
+          }
+        ]
+      }
     }
   ],
   "target": "branch"
