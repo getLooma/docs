@@ -15,14 +15,24 @@
       });
     in
     {
-      # Minimal shell so `openspec` runs; change `docs-site` adds the site's tooling.
       devShells = forAllSystems ({ pkgs }: {
         default = pkgs.mkShell {
           packages = with pkgs; [
-            # Node: scripts/openspec (pnpm dlx), Prettier
+            # Node: the site (Astro Starlight), scripts/openspec (pnpm dlx), Prettier
             nodejs_22
             pnpm_11
             prettier
+
+            # Checks in `just check`
+            vale        # prose lint, vendored style in styles/Looma (no `vale sync`)
+            gitleaks    # secrets, in scripts/check-public
+            actionlint  # .github/workflows
+
+            # The production server, so `just check` smoke-tests deploy/Caddyfile without Docker
+            caddy
+
+            # Scheduled external link check (.github/workflows/links.yml)
+            lychee
 
             # Glue
             just
@@ -30,7 +40,9 @@
 
           shellHook = ''
             export PROJECT_ROOT="$PWD"
-            export PATH="$PROJECT_ROOT/scripts:$PATH"   # scripts/openspec wrapper
+            export PATH="$PROJECT_ROOT/node_modules/.bin:$PROJECT_ROOT/scripts:$PATH"
+            # Astro telemetry stays off for every contributor and in CI.
+            export ASTRO_TELEMETRY_DISABLED=1
             echo "docs shell ready: node $(node --version), pnpm $(pnpm --version)"
           '';
         };

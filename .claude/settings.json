@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(openspec *)",
+      "Bash(just *)",
+      "Bash(pnpm *)",
+      "Bash(node scripts/*)",
+      "Bash(vale *)",
+      "Bash(nix develop *)",
+      "Bash(direnv *)",
+      "Bash(git push origin *)",
+      "Bash(git push -u origin *)",
+      "Bash(gh pr create *)",
+      "Bash(gh pr view *)",
+      "Bash(gh pr list *)",
+      "Bash(gh pr checks *)",
+      "Bash(gh pr diff *)"
+    ],
+    "deny": [
+      "Bash(git push * main)",
+      "Bash(git push * main *)",
+      "Bash(git push *:main*)",
+      "Bash(git push *HEAD*)",
+      "Bash(git push *+*)",
+      "Bash(git push *--force*)",
+      "Bash(git push -f *)",
+      "Bash(git push * -f *)",
+      "Bash(git push * -f)",
+      "Bash(git push *--delete*)",
+      "Bash(git push * -d *)",
+      "Bash(git push *--all*)",
+      "Bash(git push *--mirror*)",
+      "Bash(just ruleset-apply*)",
+      "Bash(just repo-settings apply*)",
+      "Bash(nix flake update*)"
+    ]
+  }
+}

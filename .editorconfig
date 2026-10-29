@@ -1,0 +1,20 @@
+# Editor defaults; Prettier is the enforced formatter and agrees with these.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+[justfile]
+indent_size = 4
+
+[Caddyfile]
+indent_style = tab
+
+# Markdown uses trailing double-spaces for hard line breaks
+[*.md]
+trim_trailing_whitespace = false

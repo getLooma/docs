@@ -14,11 +14,22 @@
   "overrides": [
     {
       "files": ["*.md", "*.markdown"],
-      "options": { "printWidth": 100 }
+      "options": {
+        "printWidth": 100
+      }
     },
     {
       "files": ["*.yml", "*.yaml"],
-      "options": { "singleQuote": false }
+      "options": {
+        "singleQuote": false
+      }
+    },
+    {
+      "files": ["*.astro"],
+      "options": {
+        "parser": "astro"
+      }
     }
-  ]
+  ],
+  "plugins": ["prettier-plugin-astro"]
 }
