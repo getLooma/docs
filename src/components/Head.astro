@@ -1,8 +1,9 @@
 ---
-// Starlight's <head>, plus the Markdown alternate, the per-page Open Graph image and JSON-LD
-// (openspec change docs-site, design.md D7 and D8).
+// Starlight's <head>, plus the Markdown and changelog feed alternates, the per-page Open Graph
+// image and JSON-LD (openspec change docs-site, design.md D7 and D8).
 import Default from '@astrojs/starlight/components/Head.astro';
 import { sections } from '../sections.mjs';
+import { FEED_PATH } from '../lib/changelog.mjs';
 
 const route = Astro.locals.starlightRoute;
 const { entry, lastUpdated } = route;
@@ -74,6 +75,7 @@ const jsonLd = JSON.stringify({ '@context': 'https://schema.org', '@graph': grap
 
 <Default />
 <link rel="alternate" type="text/markdown" href={markdownPath} />
+<link rel="alternate" type="application/atom+xml" title="Looma changelog" href={FEED_PATH} />
 <meta property="og:image" content={ogImage.href} />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />

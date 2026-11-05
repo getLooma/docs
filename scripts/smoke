@@ -89,4 +89,10 @@ for p in /robots.txt /llms.txt /llms-full.txt /sitemap-index.xml /index.md; do
 done
 has "$(head_of /llms.txt)" 'Content-Type: text/plain; charset=utf-8' && ok "/llms.txt is text/plain" || bad "/llms.txt is not text/plain; charset=utf-8"
 
+# The changelog's Atom feed (docs-changelog spec), once the changelog exists.
+if grep -qx '/changelog/' published-routes.txt; then
+  [ "$(status_of "$base/changelog/feed.xml")" = 200 ] && ok "/changelog/feed.xml is 200" || bad "/changelog/feed.xml is not 200"
+  grep -qiE '^Content-Type: [a-z/+]*xml' <<<"$(head_of /changelog/feed.xml)" && ok "/changelog/feed.xml is XML" || bad "/changelog/feed.xml is not served as XML"
+fi
+
 exit "$fail"

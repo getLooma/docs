@@ -10,6 +10,7 @@ export const sections = [
   { dir: 'team', label: 'Team and roles' },
   { dir: 'privacy', label: 'Privacy and data requests' },
   { dir: 'faq', label: 'FAQ' },
+  { dir: 'changelog', label: 'Changelog' },
 ];
 
 export const site = 'https://docs.getlooma.io';

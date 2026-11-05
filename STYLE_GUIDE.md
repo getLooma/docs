@@ -123,6 +123,30 @@ description: Admins invite teammates by email and choose each person's role; the
   result snippet and the summary in `llms.txt`.
 - `faq` (FAQ page only): a list of `question` and `answer` pairs, each also a heading on the page.
 
+## Changelog entries
+
+The [changelog](https://docs.getlooma.io/changelog/) announces released changes that users can
+notice. Each entry is a file in `src/content/changelog/`, named `YYYY-MM-DD-<slug>.md`:
+
+```markdown
+---
+date: 2026-11-03 # the day the entry is published; fix it before merging a draft
+title: Rate a suggested reply # at most 70 characters, sentence case
+category: new # new, improved or fixed
+docs: /ai/suggested-replies/ # optional: a published page that explains the change
+---
+
+You can rate a suggested reply before you use it or discard it.
+```
+
+- **What to announce:** a new feature, a visible improvement, or a fix for something users hit.
+- **Never announce:** internal work, infrastructure, performance numbers, vendors, security fixes
+  before they are disclosed, or anything not yet released to every customer.
+- **The body:** one or two short paragraphs, at most 600 characters, no headings. Write it like a
+  page's first paragraph: what users can do now. Use the words in the table above.
+- **The slug** becomes the entry's link (`/changelog/#<slug>`). Never reuse one, and never edit a
+  published entry except to fix a mistake.
+
 ## Images
 
 - PNG or WebP, under `src/assets/<section>/`, cropped to the part that matters.

@@ -5,9 +5,18 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { parse as parseHtml } from 'node-html-parser';
+import { parse as parseHtml, valid as validMarkup } from 'node-html-parser';
 import { site as defaultSite } from '../src/sections.mjs';
 import { frontmatter, markdownOf, readPages } from './lib/pages.mjs';
+import {
+  FEED_LIMIT,
+  FEED_PATH,
+  changelogDir,
+  groupByDate,
+  readEntries,
+  slugOf,
+  sortNewestFirst,
+} from '../src/lib/changelog.mjs';
 
 export const REQUIRED_CRAWLERS = [
   'GPTBot',
@@ -132,6 +141,59 @@ function sitemapLocs(dist) {
   });
 }
 
+/**
+ * The built changelog (docs-changelog spec): each entry's anchor once, dates newest first, the
+ * Atom alternate link, a well-formed feed listing every entry (up to FEED_LIMIT), and every title
+ * in the Markdown copy and llms-full.txt.
+ * @param {{ id: string, date: string, title: string }[]} entries
+ */
+export function changelogSiteErrors(dist, entries, site) {
+  const errors = [];
+  const sorted = sortNewestFirst(entries);
+  const file = htmlFile(dist, '/changelog/');
+  if (!fs.existsSync(file)) return ['/changelog/: not built'];
+  const html = parseHtml(fs.readFileSync(file, 'utf8'));
+  for (const e of sorted) {
+    const slug = slugOf(e.id);
+    const n = html.querySelectorAll(`h3[id="${slug}"]`).length;
+    if (n !== 1) errors.push(`/changelog/: #${slug} appears ${n} times, expected once`);
+  }
+  const dates = html
+    .querySelectorAll('h2')
+    .map((h) => h.getAttribute('id') ?? '')
+    .filter((id) => /^\d{4}-\d{2}-\d{2}$/.test(id));
+  if (JSON.stringify(dates) !== JSON.stringify(groupByDate(sorted).map((g) => g.date))) {
+    errors.push(`/changelog/: dates are not newest first, one heading each (${dates.join(', ')})`);
+  }
+  const alternate = html.querySelector('link[rel="alternate"][type="application/atom+xml"]');
+  if (alternate?.getAttribute('href') !== FEED_PATH) {
+    errors.push(`/changelog/: no Atom alternate link to ${FEED_PATH}`);
+  }
+  const feedFile = path.join(dist, FEED_PATH);
+  if (!fs.existsSync(feedFile)) errors.push(`${FEED_PATH} missing`);
+  else {
+    const xml = fs.readFileSync(feedFile, 'utf8');
+    if (!xml.startsWith('<?xml') || !validMarkup(xml)) errors.push(`${FEED_PATH}: not well formed`);
+    const ids = parseHtml(xml)
+      .querySelectorAll('entry')
+      .map((n) => n.querySelector('id')?.text);
+    const expected = sorted
+      .slice(0, FEED_LIMIT)
+      .map((e) => `tag:${new URL(site).host},${e.date}:${slugOf(e.id)}`);
+    if (ids.length !== expected.length) {
+      errors.push(`${FEED_PATH}: feed lists ${ids.length} entries, expected ${expected.length}`);
+    } else if (JSON.stringify(ids) !== JSON.stringify(expected)) {
+      errors.push(`${FEED_PATH}: entry ids differ from the entries`);
+    }
+  }
+  for (const rel of ['changelog.md', 'llms-full.txt']) {
+    const f = path.join(dist, rel);
+    const text = fs.existsSync(f) ? fs.readFileSync(f, 'utf8') : '';
+    for (const e of sorted) if (!text.includes(e.title)) errors.push(`${rel}: no "${e.title}"`);
+  }
+  return errors;
+}
+
 export function checkSite({ dist, root = '.', site = defaultSite }) {
   const errors = [];
   const contentDir = path.join(root, 'src/content/docs');
@@ -228,6 +290,10 @@ export function checkSite({ dist, root = '.', site = defaultSite }) {
     }
   }
   if (!budget) errors.push('scripts/budget.json missing');
+
+  if (pages.some((p) => p.route === '/changelog/')) {
+    errors.push(...changelogSiteErrors(dist, readEntries(path.join(root, changelogDir)), site));
+  }
 
   // llms.txt and llms-full.txt
   const llms = path.join(dist, 'llms.txt');
