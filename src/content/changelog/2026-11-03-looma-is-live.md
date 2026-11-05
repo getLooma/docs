@@ -5,8 +5,6 @@ category: new
 ---
 
 Looma is open to support teams. Send conversations from your own systems through an API source,
-or log one by hand: they all land in one inbox. Connect a Shopify store to see each customer's
-recent orders. Looma analyses every conversation: a summary, what the customer wants, the
-sentiment, and scores for urgency, frustration and churn risk. It groups similar conversations
-into issues, each with a status and a trend over time. A suggested reply can wait above the
-composer: use it, discard it or rate it.
+or log a call or a visit by hand: they all land in one inbox, matched to the customer. Connect a
+Shopify store to see each customer's recent orders next to their conversations. Invite your team
+and give each member a role.
