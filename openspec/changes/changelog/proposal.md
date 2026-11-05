@@ -23,8 +23,9 @@ a maintainer can add an entry by hand in any pull request.
   `published-routes.txt`.
 - **New Atom feed** at `/changelog/feed.xml`, built by a new endpoint
   `src/pages/changelog/feed.xml.ts` without any new dependency. It lists the 50 newest entries.
-  The changelog page links it with `<link rel="alternate" type="application/atom+xml">` in
-  `src/components/Head.astro`, and visibly.
+  Every page links it with `<link rel="alternate" type="application/atom+xml">` in
+  `src/components/Head.astro`, so feed readers find it from any page; the changelog page also
+  links it visibly.
 - **Agents and Markdown.** The page's Markdown copy (`scripts/lib/markdown-copies.mjs`) and the
   llms.txt files carry the entries as text, so an assistant reading the docs sees them too.
 - **Checks.** `scripts/check-repo.mjs` checks entry file names, body length, the absence of
@@ -58,7 +59,8 @@ a maintainer can add an entry by hand in any pull request.
 
 ## Impact
 
-- New: `src/content/changelog/` (one first entry, announcing the changelog itself),
+- New: `src/content/changelog/` (the first entry, "Looma is live", dated 2026-11-03: what Looma
+  does today, design.md D8), `src/lib/changelog.mjs` (shared by the page, the feed and the checks),
   `src/content/docs/changelog/index.mdx`, `src/components/Changelog.astro`,
   `src/pages/changelog/feed.xml.ts`, tests under `scripts/test/`.
 - Changed: `src/content.config.ts`, `src/sections.mjs`, `src/components/Head.astro`,

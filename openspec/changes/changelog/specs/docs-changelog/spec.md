@@ -17,7 +17,7 @@ the file.
 
 #### Scenario: A file name that disagrees with the date fails
 
-- **WHEN** `src/content/changelog/2026-11-12-snooze.md` has `date: 2026-11-13`
+- **WHEN** `src/content/changelog/2026-11-12-sample.md` has `date: 2026-11-13`
 - **THEN** `node scripts/check-repo.mjs` exits non-zero, naming the file
 
 #### Scenario: A docs link to a missing page fails

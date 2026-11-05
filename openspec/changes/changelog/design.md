@@ -33,14 +33,13 @@ Each entry is `src/content/changelog/YYYY-MM-DD-<slug>.md`:
 
 ```markdown
 ---
-date: 2026-11-12
-title: Snooze a conversation until later
+date: 2026-11-03
+title: Rate a suggested reply
 category: new
-docs: /inbox/snooze/
+docs: /ai/suggested-replies/
 ---
 
-Agents can snooze a conversation for an hour, until tomorrow or until a date they pick. It comes
-back to the top of the inbox when the time is up, or as soon as the customer replies.
+You can rate a suggested reply before you use it or discard it.
 ```
 
 - `date` is the day the entry is published; `category` is one of `new`, `improved`, `fixed`
@@ -76,8 +75,8 @@ XML-escaped by one tested helper.
 
 `scripts/lib/markdown-copies.mjs` writes the changelog page's Markdown copy from the entries
 (date heading, title, category, body, docs link) rather than from the MDX source, which only
-holds the component import. llms-full.txt is built from the same copy. `check-site` asserts that
-both contain every entry's title.
+holds the component. llms-full.txt is converted from the built HTML, so it holds the entries
+already. `check-site` asserts that both contain every entry's title.
 
 ### D6. Checks (all in `just check`)
 
@@ -123,7 +122,18 @@ endpoint.
 - **Entries dated at draft time, merged later.** The reviewer fixes `date` before merging; the
   style guide says so.
 
-## Open Questions
+### D8. The first entry: the launch (owner decision, 2026-11-05)
 
-- Should the first entry backfill the features already released (one "Looma today" entry), or
-  start empty with only the changelog's own announcement? Recommended: the latter.
+The changelog starts with one entry, `2026-11-03-looma-is-live.md` ("Looma is live", `new`),
+dated go-live day. It sums up what every customer can use today, each claim checked against the
+released product: conversations from API sources or logged by hand in one inbox; Shopify stores
+bringing in customers' recent orders; a conversation analysis of every conversation (summary,
+what the customer wants, sentiment, urgency, frustration and churn risk scores); issues grouping
+similar conversations, with a status and a trend; suggested replies that can be used, discarded
+or rated. Nothing that is gated, planned or "coming soon" is named. It has no `docs` link: no
+section page is published yet.
+
+## Owner decisions (2026-11-05)
+
+Approved with: one entry per merge (no weekly digest); the launch entry above as the first entry;
+`getlooma.io/changelog` redirects here (the drafting side's change).

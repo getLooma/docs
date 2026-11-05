@@ -1,10 +1,26 @@
 // Astro integration: after the build, make every Markdown copy start with the page title as an
 // h1 followed by its description (docs-discoverability spec). starlight-page-actions writes the
-// copies with the title only.
+// copies with the title only. The changelog page's copy gets its entries (openspec change
+// `changelog`, design.md D5), since its source holds only the component.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { markdownOf } from './pages.mjs';
+import {
+  FEED_PATH,
+  changelogMarkdown,
+  readEntries,
+  sortNewestFirst,
+} from '../../src/lib/changelog.mjs';
+import { site } from '../../src/sections.mjs';
+
+const COMPONENT = /^<Changelog \/>\s*$/m;
+
+/** The changelog page's copy: the component line becomes the feed link and the entries. */
+export function withChangelog(markdown, entries) {
+  const feed = `[Atom feed](${new URL(FEED_PATH, site).href})`;
+  return markdown.replace(COMPONENT, () => `${feed}\n\n${entries.trim()}\n`);
+}
 
 /** Insert `> description` after the leading h1 of a Markdown copy, once. */
 export function withDescription(markdown, title, description) {
@@ -26,7 +42,10 @@ export default function markdownCopies(pages) {
         for (const page of pages) {
           const file = path.join(out, markdownOf(page.route));
           if (!fs.existsSync(file)) continue; // check-site.mjs reports the missing copy
-          const next = withDescription(fs.readFileSync(file, 'utf8'), page.title, page.description);
+          let next = withDescription(fs.readFileSync(file, 'utf8'), page.title, page.description);
+          if (page.route === '/changelog/') {
+            next = withChangelog(next, changelogMarkdown(sortNewestFirst(readEntries()), site));
+          }
           fs.writeFileSync(file, next);
         }
       },

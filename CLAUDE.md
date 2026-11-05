@@ -25,6 +25,10 @@ rely on it.
   and their order are in `src/sections.mjs` (design.md D3 of OpenSpec change `docs-site`): one
   directory per section, lowercase hyphenated file names, a section appears in the sidebar with
   its first page. The home page is `src/content/docs/index.mdx`.
+- The changelog (`/changelog/`, OpenSpec change `changelog`): one entry per file in
+  `src/content/changelog/` (`YYYY-MM-DD-<slug>.md`, the `changelog` collection), rendered by
+  `src/components/Changelog.astro`, with an Atom feed at `/changelog/feed.xml`; shared code in
+  `src/lib/changelog.mjs`. STYLE_GUIDE.md "Changelog entries" says what may be announced.
 - Every page has a unique `title` (≤ 60) and `description` (50–160), required by
   `src/content.config.ts`. Optional `faq` frontmatter feeds `FAQPage` JSON-LD.
 - `STYLE_GUIDE.md` is binding for all user-facing text: answer first, the product vocabulary,

@@ -1,0 +1,50 @@
+---
+// The changelog entries, newest first, one h2 per date and one h3 per entry (openspec change
+// `changelog`, design.md D3). No client JavaScript.
+import { Badge } from '@astrojs/starlight/components';
+import { getCollection, render } from 'astro:content';
+import {
+  CATEGORIES,
+  FEED_PATH,
+  formatDate,
+  groupByDate,
+  slugOf,
+  sortNewestFirst,
+} from '../lib/changelog.mjs';
+
+const variants = { new: 'success', improved: 'note', fixed: 'caution' } as const;
+const entries = await Promise.all(
+  sortNewestFirst(await getCollection('changelog')).map(async (e) => ({
+    slug: slugOf(e.id),
+    date: e.data.date,
+    title: e.data.title,
+    category: e.data.category,
+    docs: e.data.docs,
+    Content: (await render(e)).Content,
+  }))
+);
+const groups = groupByDate(entries);
+---
+
+<p>
+  Follow new entries in your feed reader with the <a href={FEED_PATH}>Atom feed</a>.
+</p>
+{groups.map((group) => (
+  <section>
+    <h2 id={group.date}>{formatDate(group.date)}</h2>
+    {group.entries.map((e) => (
+      <article>
+        <h3 id={e.slug}>{e.title}</h3>
+        <p>
+          <Badge text={CATEGORIES[e.category]} variant={variants[e.category]} />
+        </p>
+        <e.Content />
+        {e.docs && (
+          <p>
+            <a href={e.docs}>Read the docs</a>
+          </p>
+        )}
+      </article>
+    ))}
+  </section>
+))}

@@ -8,6 +8,8 @@ import { pathToFileURL } from 'node:url';
 import { parse } from 'yaml';
 import { sections } from '../src/sections.mjs';
 import { listPageFiles } from './lib/pages.mjs';
+import { readManifest } from './routes.mjs';
+import { CATEGORIES, changelogDir, readEntries, slugOf } from '../src/lib/changelog.mjs';
 
 export const MAINTAINERS = '@getLooma/dev';
 export const OWNER = '@DevAOC';
@@ -205,10 +207,72 @@ export function checkSettings(settings, errors, rel = 'scripts/repo-settings.jso
   );
 }
 
+const ENTRY_NAME = /^(\d{4}-\d{2}-\d{2})-[a-z0-9]+(-[a-z0-9]+)*\.md$/;
+export const MAX_ENTRY_BODY = 600;
+export const MAX_ENTRY_TITLE = 70;
+
+/** Changelog entries (docs-changelog spec): name, date, fields, body, docs route, unique slugs. */
+export function checkChangelogFiles(root) {
+  const errors = [];
+  const dir = path.join(root, changelogDir);
+  if (!fs.existsSync(dir)) return errors;
+  for (const file of fs.readdirSync(dir)) {
+    if (!file.endsWith('.md')) errors.push(`${changelogDir}/${file}: only .md entries belong here`);
+  }
+  const published = new Set(readManifest(path.join(root, 'published-routes.txt')));
+  const redirectsFile = path.join(root, 'redirects.json');
+  const moved = new Set(
+    fs.existsSync(redirectsFile)
+      ? JSON.parse(fs.readFileSync(redirectsFile, 'utf8')).map((r) => r.from)
+      : []
+  );
+  const slugs = new Map();
+  for (const e of readEntries(dir)) {
+    const rel = `${changelogDir}/${e.file}`;
+    const name = ENTRY_NAME.exec(e.file);
+    if (!name) {
+      errors.push(`${rel}: name must be YYYY-MM-DD-<lowercase-hyphenated-slug>.md`);
+      continue;
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(e.date ?? '') || Number.isNaN(Date.parse(e.date))) {
+      errors.push(`${rel}: date must be a YYYY-MM-DD date`);
+    } else if (e.date !== name[1]) {
+      errors.push(`${rel}: the file name's date differs from date ${e.date}`);
+    }
+    const slug = slugOf(e.id);
+    if (slugs.has(slug)) errors.push(`${rel}: slug "${slug}" is also used by ${slugs.get(slug)}`);
+    else slugs.set(slug, e.file);
+    if (typeof e.title !== 'string' || !e.title.trim()) errors.push(`${rel}: no title`);
+    else if (e.title.length > MAX_ENTRY_TITLE) {
+      errors.push(`${rel}: title is ${e.title.length} characters, at most ${MAX_ENTRY_TITLE}`);
+    }
+    if (!Object.hasOwn(CATEGORIES, e.category ?? '')) {
+      errors.push(
+        `${rel}: category "${e.category}"; allowed: ${Object.keys(CATEGORIES).join(', ')}`
+      );
+    }
+    if (e.docs !== undefined && (!published.has(e.docs) || moved.has(e.docs))) {
+      errors.push(`${rel}: docs ${e.docs} is not a published page`);
+    }
+    if (!e.body) errors.push(`${rel}: empty body`);
+    if (e.body.length > MAX_ENTRY_BODY) {
+      errors.push(`${rel}: body is ${e.body.length} characters, at most ${MAX_ENTRY_BODY}`);
+    }
+    e.body.split('\n').forEach((line, i) => {
+      if (/^\s{0,3}#{1,6}(\s|$)/.test(line)) {
+        errors.push(`${rel}: body line ${i + 1} is a heading; entries have none`);
+      }
+    });
+    checkSource(rel, e.body, errors);
+  }
+  return errors;
+}
+
 export function checkRepo(root) {
   const errors = [];
   checkPins(root, errors);
   checkPages(root, errors);
+  errors.push(...checkChangelogFiles(root));
   checkLicenses(root, errors);
   checkTemplates(root, errors);
   checkCodeowners(root, errors);

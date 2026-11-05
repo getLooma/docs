@@ -16,5 +16,6 @@
 
 - [ ] I followed STYLE_GUIDE.md (answer first, product terms, invented sample data only)
 - [ ] `just check` passes locally (or I relied on CI)
+- [ ] A changelog entry in `src/content/changelog/`, if users should hear about this change (STYLE_GUIDE.md)
 - [ ] No internal details: no internal URLs or hosts, private names, settings users can't change, unreleased features or real customer data
 - [ ] Every commit is signed off (`Signed-off-by`, `git commit -s`)
