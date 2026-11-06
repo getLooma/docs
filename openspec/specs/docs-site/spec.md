@@ -1,7 +1,9 @@
 # docs-site Specification
 
 ## Purpose
-TBD - created by archiving change docs-site. Update Purpose after archive.
+Looma's public documentation site: a static Astro Starlight build whose pages follow a fixed
+information architecture under stable, readable URLs, with text and code licensed separately and
+every tool coming from the dev shell.
 
 ## Requirements
 
@@ -25,7 +27,7 @@ and no secret.
 ### Requirement: Pages follow the information architecture
 
 Every page SHALL live under one of the top-level section directories `getting-started/`,
-`inbox/`, `issues/`, `ai/`, `integrations/`, `team/`, `privacy/` or `faq/` in
+`inbox/`, `issues/`, `ai/`, `integrations/`, `team/`, `privacy/`, `faq/` or `changelog/` in
 `src/content/docs/`, except the home page `index.mdx`. Integration pages SHALL live one directory
 per provider under `integrations/` (for example `integrations/shopify/`). A section SHALL appear in
 the sidebar only once it holds at least one page.
@@ -39,6 +41,11 @@ the sidebar only once it holds at least one page.
 
 - **WHEN** the site is built and `src/content/docs/team/` holds no page
 - **THEN** no sidebar group for Team and roles is rendered
+
+#### Scenario: The changelog is the last section
+
+- **WHEN** the site is built with `src/content/docs/changelog/index.mdx`
+- **THEN** the sidebar's last group is Changelog
 
 ### Requirement: URLs are stable and readable
 
