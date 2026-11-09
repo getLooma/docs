@@ -52,7 +52,7 @@ jobs:
           docker run -d --name docs -p 18080:8080 "$IMAGE:$GITHUB_SHA"
           trap 'docker rm -f docs >/dev/null' EXIT
           scripts/smoke http://127.0.0.1:18080
-      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -75,7 +75,7 @@ jobs:
         env:
           SHA: ${{ inputs.sha || github.sha }}
         run: '[[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::sha must be a full 40-character commit SHA"; exit 1; }'
-      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
