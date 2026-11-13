@@ -13,15 +13,20 @@ import {
 } from '../lib/changelog.mjs';
 
 const variants = { new: 'success', improved: 'note', fixed: 'caution' } as const;
-const entries = await Promise.all(
-  sortNewestFirst(await getCollection('changelog')).map(async (e) => ({
-    slug: slugOf(e.id),
-    date: e.data.date,
-    title: e.data.title,
-    category: e.data.category,
-    docs: e.data.docs,
-    Content: (await render(e)).Content,
-  }))
+// Sorted after mapping: sortNewestFirst reads `id` and `date`, which a collection entry keeps
+// under `data`.
+const entries = sortNewestFirst(
+  await Promise.all(
+    (await getCollection('changelog')).map(async (e) => ({
+      id: e.id,
+      slug: slugOf(e.id),
+      date: e.data.date,
+      title: e.data.title,
+      category: e.data.category,
+      docs: e.data.docs,
+      Content: (await render(e)).Content,
+    }))
+  )
 );
 const groups = groupByDate(entries);
 ---
