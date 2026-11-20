@@ -4,6 +4,10 @@
 import Default from '@astrojs/starlight/components/Head.astro';
 import { sections } from '../sections.mjs';
 import { FEED_PATH } from '../lib/changelog.mjs';
+import { supportChatConfig } from '../lib/support-chat.mjs';
+
+// The optional support chat (openspec change support-chat-embed): no tag unless configured.
+const supportChat = supportChatConfig(process.env);
 
 const route = Astro.locals.starlightRoute;
 const { entry, lastUpdated } = route;
@@ -82,3 +86,4 @@ const jsonLd = JSON.stringify({ '@context': 'https://schema.org', '@graph': grap
 <meta property="og:image:alt" content={data.title} />
 <meta name="twitter:image" content={ogImage.href} />
 <script type="application/ld+json" set:html={jsonLd} />
+{supportChat && <script is:inline src={supportChat.scriptUrl} data-key={supportChat.key} async />}

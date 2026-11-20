@@ -43,6 +43,10 @@ jobs:
           restore-prefixes-first-match: nix-${{ runner.os }}-
           gc-max-store-size-linux: 2G
       - name: just check, then the site for the image
+        env:
+          # The optional support chat (README.md): repository variables; both unset means off.
+          PUBLIC_SUPPORT_CHAT_URL: ${{ vars.PUBLIC_SUPPORT_CHAT_URL }}
+          PUBLIC_SUPPORT_CHAT_KEY: ${{ vars.PUBLIC_SUPPORT_CHAT_KEY }}
         run: nix develop -c bash -c 'pnpm install --frozen-lockfile && just check && node scripts/routes.mjs --caddy dist'
       - name: Build and smoke-test the image
         run: |

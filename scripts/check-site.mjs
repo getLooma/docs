@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Built-site checks for `just check` (openspec change docs-site, docs-discoverability spec):
-// semantic HTML, metadata, JSON-LD, Markdown copies, llms.txt, sitemap, robots.txt, edit links
-// and the client JavaScript budget. Usage: check-site.mjs [dist] [root]
+// semantic HTML, metadata, JSON-LD, Markdown copies, llms.txt, sitemap, robots.txt, edit links,
+// the client JavaScript budget and the optional support chat embed.
+// Usage: check-site.mjs [dist] [root]
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -17,6 +18,7 @@ import {
   slugOf,
   sortNewestFirst,
 } from '../src/lib/changelog.mjs';
+import { CSP_FILE, cspCaddy, supportChatConfig } from '../src/lib/support-chat.mjs';
 
 export const REQUIRED_CRAWLERS = [
   'GPTBot',
@@ -194,7 +196,60 @@ export function changelogSiteErrors(dist, entries, site) {
   return errors;
 }
 
-export function checkSite({ dist, root = '.', site = defaultSite }) {
+function htmlFiles(dir) {
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) return htmlFiles(p);
+    return e.name.endsWith('.html') ? [p] : [];
+  });
+}
+
+/**
+ * The support chat embed (openspec change `support-chat-embed`): unconfigured, no page has a
+ * widget tag; configured, every page has exactly one, with the configured URL and key, loaded
+ * async. Either way the built Content-Security-Policy fragment matches the configuration.
+ * @param {string} dist
+ * @param {string[]} routes the pages that must carry the tag when configured
+ * @param {{ origin: string, key: string, scriptUrl: string } | null} config
+ */
+export function supportChatErrors(dist, routes, config) {
+  const errors = [];
+  const isWidget = (s) =>
+    s.getAttribute('data-key') !== undefined ||
+    /\/v1\/widget\.js(\?|$)/.test(s.getAttribute('src') ?? '');
+  const tagsOf = (file) =>
+    parseHtml(fs.readFileSync(file, 'utf8')).querySelectorAll('script').filter(isWidget);
+  for (const file of htmlFiles(dist)) {
+    const where = `/${path.relative(dist, file)}`;
+    for (const tag of tagsOf(file)) {
+      if (!config)
+        errors.push(`${where}: support chat tag, but the support chat is not configured`);
+      else if (
+        tag.getAttribute('src') !== config.scriptUrl ||
+        tag.getAttribute('data-key') !== config.key ||
+        tag.getAttribute('async') === undefined
+      ) {
+        errors.push(`${where}: support chat tag differs from the configuration`);
+      }
+    }
+  }
+  if (config) {
+    for (const route of routes) {
+      const file = htmlFile(dist, route);
+      if (!fs.existsSync(file)) continue;
+      const n = tagsOf(file).length;
+      if (n !== 1) errors.push(`${route}: ${n} support chat tags, expected 1`);
+    }
+  }
+  const cspFile = path.join(dist, CSP_FILE);
+  if (!fs.existsSync(cspFile)) errors.push(`${CSP_FILE} missing`);
+  else if (fs.readFileSync(cspFile, 'utf8') !== cspCaddy(config)) {
+    errors.push(`${CSP_FILE}: differs from the support chat configuration`);
+  }
+  return errors;
+}
+
+export function checkSite({ dist, root = '.', site = defaultSite, env = process.env }) {
   const errors = [];
   const contentDir = path.join(root, 'src/content/docs');
   const pages = readPages(contentDir);
@@ -294,6 +349,14 @@ export function checkSite({ dist, root = '.', site = defaultSite }) {
   if (pages.some((p) => p.route === '/changelog/')) {
     errors.push(...changelogSiteErrors(dist, readEntries(path.join(root, changelogDir)), site));
   }
+
+  errors.push(
+    ...supportChatErrors(
+      dist,
+      pages.map((p) => p.route),
+      supportChatConfig(env)
+    )
+  );
 
   // llms.txt and llms-full.txt
   const llms = path.join(dist, 'llms.txt');
