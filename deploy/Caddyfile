@@ -14,11 +14,13 @@
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		X-Content-Type-Options "nosniff"
 		Referrer-Policy "strict-origin-when-cross-origin"
-		# Starlight ships small inline scripts (theme) and Pagefind needs WebAssembly.
-		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
 		Vary "Accept"
 		-Server
 	}
+
+	# Content-Security-Policy: written by the build (src/lib/support-chat.mjs), so it allows the
+	# support chat's origin only when that build configured the chat.
+	import {$SITE_ROOT:/srv}/_csp.caddy
 
 	# Moved pages: permanent redirects rendered from redirects.json by scripts/routes.mjs.
 	import {$SITE_ROOT:/srv}/_redirects.caddy

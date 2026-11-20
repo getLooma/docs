@@ -33,6 +33,7 @@ if [ "${1:-}" = "--local" ]; then
   caddy_pid=$!
   cleanup() { kill "$caddy_pid" 2>/dev/null || true; wait "$caddy_pid" 2>/dev/null || true; rm -rf "$root"; }
   base="http://127.0.0.1:$port"
+  csp_file="$root/_csp.caddy"
 else
   base="${1:?usage: scripts/smoke --local [dist] | scripts/smoke <base-url>}"
 fi
@@ -49,6 +50,13 @@ for header in 'Strict-Transport-Security:' 'X-Content-Type-Options: nosniff' \
   'Referrer-Policy: strict-origin-when-cross-origin' 'Content-Security-Policy:' 'Vary: Accept'; do
   if has "$h" "$header"; then ok "/ sends $header"; else bad "/ lacks $header"; fi
 done
+# The policy the build wrote (support chat origin only when configured) is the one served.
+csp_file="${csp_file:-dist/_csp.caddy}"
+if [ -f "$csp_file" ]; then
+  want="$(sed -n 's/^header Content-Security-Policy "\(.*\)"$/\1/p' "$csp_file")"
+  have="$(sed -n 's/^Content-Security-Policy: //Ip' <<<"$h")"
+  [ -n "$want" ] && [ "$have" = "$want" ] && ok "/ sends the built Content-Security-Policy" || bad "/ sends a Content-Security-Policy other than $csp_file"
+fi
 [ "$(status_of "$base/")" = 200 ] && ok "/ is 200" || bad "/ is not 200"
 
 # Content negotiation: the home page's Markdown copy.

@@ -8,9 +8,14 @@ import starlightPageActions from 'starlight-page-actions';
 import { site } from './src/sections.mjs';
 import { markdownOf, populatedSections, readPages } from './scripts/lib/pages.mjs';
 import markdownCopies from './scripts/lib/markdown-copies.mjs';
+import supportChatCsp from './scripts/lib/support-chat-csp.mjs';
+import { supportChatConfig } from './src/lib/support-chat.mjs';
 
 // openspec change docs-site: design.md D1 (versions), D3 (IA), D7 (AI), D8 (SEO).
 const pages = readPages();
+// The optional support chat (openspec change support-chat-embed): off unless both build settings
+// are set; a partial or malformed setting fails the build here.
+const supportChat = supportChatConfig(process.env);
 const populated = populatedSections(pages);
 
 /** @type {{ from: string, to: string }[]} */
@@ -75,5 +80,6 @@ export default defineConfig({
       ],
     }),
     markdownCopies(pages),
+    supportChatCsp(supportChat),
   ],
 });
