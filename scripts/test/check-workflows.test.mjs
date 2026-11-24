@@ -39,6 +39,13 @@ describe('check-workflows', () => {
     ).toMatch(/must not reference secrets/);
   });
 
+  it('rejects gh api with both --slurp and --jq', () => {
+    const run = `        run: gh api repos/o/r/pulls/1/reviews --paginate --slurp --jq 'add' > r.json\n`;
+    expect(checkWorkflow('x.yml', ok + run).join()).toMatch(/--slurp with --jq/);
+    const piped = `        run: gh api repos/o/r/pulls/1/reviews --paginate --slurp | jq 'add' > r.json\n`;
+    expect(checkWorkflow('x.yml', ok + piped)).toEqual([]);
+  });
+
   it('rejects links.yml on pull requests and deploy.yml without the environment', () => {
     expect(
       checkWorkflow('links.yml', ok.replace('[push]', '[schedule, pull_request]')).join()
