@@ -8,3 +8,4 @@
 /inbox/manage-macros/
 /inbox/saved-views/
 /inbox/tags/
+/inbox/conversation-settings/

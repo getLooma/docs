@@ -44,6 +44,34 @@ you clear one. If your organization has no tags yet, the picker says so; admins 
 
 In the inbox, each conversation shows up to three of its tags, then "+N" for the rest.
 
+A [macro](../manage-macros/) can also add tags when an agent sends a reply with it.
+
+## Tag an issue's conversations automatically
+
+Admins can link up to three tags to an issue. Every conversation in the issue then carries them:
+the ones already in it, and each one Looma adds to it later.
+
+1. Open the issue.
+2. Click **Tag its conversations** (or **Change**, once the issue has tags).
+3. Check the tags to link, up to three.
+4. If the issue already has conversations, Looma asks **Tag the N conversations already in this
+   issue?** Click **Tag them** to link the tag and tag them, or **Cancel**.
+
+Agents see an issue's linked tags but can't change them.
+
+How automatic tags behave:
+
+- On the conversation page, a tag that an issue applied is marked **auto**. The inbox shows it
+  like any other tag.
+- A conversation that already carries 10 tags is skipped, without a warning. It doesn't get the
+  issue's tag, and its other tags stay.
+- If a member removes an automatic tag from a conversation, that issue doesn't add it again.
+- Unlinking a tag from the issue, or deleting the issue, leaves the tag on the conversations that
+  already carry it. New conversations in the issue no longer get it.
+- Deleting a tag removes it from every issue it was linked to.
+
+In **Settings → Tags**, a tag linked to issues shows "Linked to N issues".
+
 ## Tags in data request exports
 
 When an admin exports a customer's data for a data request, each conversation in the export
@@ -53,3 +81,4 @@ lists the names of its tags. Redacting a customer keeps the tags on their conver
 
 - [Filter the inbox](../filter-the-inbox/) by one or more tags.
 - [Save inbox views](../saved-views/) to keep a tag filter in the sidebar.
+- [Create and manage macros](../manage-macros/) that add tags when a reply is sent.

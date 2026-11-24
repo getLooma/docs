@@ -38,6 +38,10 @@ Choose **1 (most urgent)**, **1 to 3**, **1 to 5** or **1 to 10** in **Priority*
 without a priority are left out while this filter is on. Choose **Any priority** to see them
 again.
 
+Members set a conversation's priority, from 1 to 25, on the
+[conversation page](../conversation-settings/), and a [macro](../macros/#apply-a-macros-actions)
+can set it when a reply is sent. Its status and assignee are set the same ways.
+
 ## See the conversations of an issue
 
 1. Open the issue.

@@ -1,6 +1,6 @@
 ---
 title: Reply with macros
-description: Insert a saved reply into the reply box with Ctrl+/ or ⌘/, check its preview for this conversation, and fill in any missing value before you send.
+description: Insert a saved reply with Ctrl+/ or ⌘/, check its preview and actions for this conversation, and fill in any missing value before you send.
 ---
 
 A macro is a saved reply your admins write once, with variables such as the customer's first
@@ -21,6 +21,30 @@ variables for this conversation before you insert it.
 
 Press <kbd>Escape</kbd> to close the dialog without inserting anything. You can edit the inserted
 text like any reply before you send it.
+
+## Apply a macro's actions
+
+Some macros also change the conversation when you send the reply: they set its status or
+priority, assign it, or add tags. The preview lists these under **When sent**, for example
+"set Pending · priority 2 · assign to you · add tag Shipping".
+
+- **Apply actions** is ticked by default. Untick it to insert only the text.
+- The actions apply when you click **Send**, together with the reply. Nothing changes when you
+  insert the macro.
+- Only one macro's actions apply per reply: the last one you inserted with **Apply actions**
+  ticked.
+- The reply and the actions succeed or fail together. If Looma can't apply the actions, nothing
+  is sent, the reply stays in the box, and Looma says why.
+
+Looma refuses to send with the actions when:
+
+- the macro assigns to someone who is no longer a member of your organization;
+- the conversation would carry more than 10 tags;
+- an admin changed the macro after you previewed it. Insert it again to see the current version.
+
+The preview warns about the first two before you insert the macro. To send anyway, untick
+**Apply actions**. To undo an action after sending, change the conversation's
+[status, assignee or priority](../conversation-settings/) or [remove the tag](../tags/).
 
 ## Fill in missing values
 
@@ -45,3 +69,4 @@ macros come first in the picker.
 
 - [Create and manage macros](../manage-macros/) (admins).
 - [Macro variables](../macro-variables/): what each variable fills in.
+- [Set a conversation's status, assignee and priority](../conversation-settings/).
