@@ -34,9 +34,9 @@ from the filter. See [Tag conversations](../tags/) to create tags and add them.
 
 ## Filter by priority
 
-Choose **1 (most urgent)**, **1 to 3**, **1 to 5** or **1 to 10** in **Priority**. Conversations
-without a priority are left out while this filter is on. Choose **Any priority** to see them
-again.
+Choose **1 (most urgent)**, **1 to 3**, **1 to 5**, **1 to 10**, **1 to 15** or **1 to 25** in
+**Priority**. Conversations without a priority are left out while this filter is on. Choose
+**Any priority** to see them again.
 
 Members set a conversation's priority, from 1 to 25, on the
 [conversation page](../conversation-settings/), and a [macro](../macros/#apply-a-macros-actions)
