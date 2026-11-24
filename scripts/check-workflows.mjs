@@ -2,7 +2,7 @@
 // Workflow-safety checks for `just check` (docs-delivery spec, "Fork pull requests never see
 // secrets"): no pull_request_target / workflow_run, top-level permissions, third-party actions
 // pinned to a full commit SHA, no secrets in the pull request CI, the review only for same-repo
-// pull requests, links only on a schedule, deploys only from main.
+// pull requests, links only on a schedule, deploys only from main, no `gh api --slurp --jq`.
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -37,6 +37,11 @@ export function checkWorkflow(name, text) {
         );
       }
     }
+  }
+  // gh exits with a usage error when --slurp and --jq are combined; pipe to jq instead.
+  for (const line of text.split('\n')) {
+    if (/\bgh api\b/.test(line) && /--slurp\b/.test(line) && /--jq\b/.test(line))
+      errors.push(`${name}: gh api cannot combine --slurp with --jq; pipe to jq`);
   }
   if (name === 'ci.yml' && /\bsecrets\./.test(text))
     errors.push('ci.yml: must not reference secrets');

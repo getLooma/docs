@@ -32,6 +32,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           PR: ${{ github.event.pull_request.number }}
+        shell: bash # -eo pipefail: a failed gh api call fails the step
         run: |
-          gh api "repos/$GITHUB_REPOSITORY/pulls/$PR/reviews" --paginate --slurp --jq 'add // []' > "$RUNNER_TEMP/reviews.json"
+          # gh rejects --slurp with --jq: slurp every page into one array, flatten it with jq.
+          gh api "repos/$GITHUB_REPOSITORY/pulls/$PR/reviews" --paginate --slurp | jq 'add // []' > "$RUNNER_TEMP/reviews.json"
           node scripts/check-drafted-pr.mjs "$RUNNER_TEMP/reviews.json"
