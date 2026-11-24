@@ -2,3 +2,9 @@
 # A route that is no longer a page must be a "from" in redirects.json (just check enforces it).
 /
 /changelog/
+/inbox/filter-the-inbox/
+/inbox/macro-variables/
+/inbox/macros/
+/inbox/manage-macros/
+/inbox/saved-views/
+/inbox/tags/
