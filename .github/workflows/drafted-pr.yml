@@ -1,17 +1,15 @@
 name: Drafted PR
 
-# Pull requests from drafts/ branches (the Looma docs bot): labelled `drafted`, no links to
-# other getLooma repositories, and approved by a docs maintainer (design.md D18). Reruns on
-# reviews. No secrets; the job only reads the pull request.
+# Pull requests from drafts/ branches (the Looma docs bot): labelled `drafted` and no links to
+# other getLooma repositories (design.md D18). No approval is required: only the Looma team can
+# merge, and merging is the review (change drafts-merge-by-members). No secrets; the job only
+# reads the pull request event.
 on:
   pull_request:
     types: [opened, edited, labeled, unlabeled, synchronize, reopened]
-  pull_request_review:
-    types: [submitted, dismissed]
 
 permissions:
   contents: read
-  pull-requests: read
 
 concurrency:
   group: drafted-pr-${{ github.event.pull_request.number }}
@@ -28,12 +26,5 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.base.sha }} # the check code from main, never the PR's
           persist-credentials: false
-      - name: Check label, body and approval
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR: ${{ github.event.pull_request.number }}
-        shell: bash # -eo pipefail: a failed gh api call fails the step
-        run: |
-          # gh rejects --slurp with --jq: slurp every page into one array, flatten it with jq.
-          gh api "repos/$GITHUB_REPOSITORY/pulls/$PR/reviews" --paginate --slurp | jq 'add // []' > "$RUNNER_TEMP/reviews.json"
-          node scripts/check-drafted-pr.mjs "$RUNNER_TEMP/reviews.json"
+      - name: Check label and body
+        run: node scripts/check-drafted-pr.mjs
