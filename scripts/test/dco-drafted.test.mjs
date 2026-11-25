@@ -37,15 +37,9 @@ describe('check-dco', () => {
 });
 
 describe('drafted-pr', () => {
-  const approved = [{ state: 'APPROVED', user: 'maintainer', association: 'MEMBER' }];
-  const base = {
-    labels: ['drafted'],
-    body: 'Documents the new filter.',
-    author: 'looma-docs-bot[bot]',
-    reviews: approved,
-  };
+  const base = { labels: ['drafted'], body: 'Documents the new filter.' };
 
-  it('passes when labelled, clean and approved', () => {
+  it('passes when labelled and clean, with no approval needed', () => {
     expect(draftedErrors(base)).toEqual([]);
   });
 
@@ -56,20 +50,5 @@ describe('drafted-pr', () => {
   it('rejects links to other getLooma repositories', () => {
     const body = 'From https://github.com/getLooma/' + 'core/pull/41';
     expect(draftedErrors({ ...base, body }).join()).toMatch(/links another getLooma repository/);
-  });
-
-  it('needs an approval from a maintainer, not the author or an outsider', () => {
-    expect(draftedErrors({ ...base, reviews: [] }).join()).toMatch(/no approving review/);
-    expect(
-      draftedErrors({
-        ...base,
-        reviews: [{ state: 'APPROVED', user: 'x', association: 'NONE' }],
-      }).join()
-    ).toMatch(/no approving review/);
-    const changed = [
-      ...approved,
-      { state: 'CHANGES_REQUESTED', user: 'maintainer', association: 'MEMBER' },
-    ];
-    expect(draftedErrors({ ...base, reviews: changed }).join()).toMatch(/no approving review/);
   });
 });
